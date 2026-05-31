@@ -66,6 +66,7 @@ export default function Home() {
     )
   }
 
+  
   return (
     <>
       <div style={{ position: 'fixed', inset: 0, zIndex: -10, background: '#06142A', overflow: 'hidden' }}>
