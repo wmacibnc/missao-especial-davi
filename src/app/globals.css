@@ -1,15 +1,13 @@
-@import "tailwindcss";
-
-@theme {
-  --color-background: #06142A;
-  --color-foreground: #ffffff;
-  --color-primary: #D7B65D;
-  --color-secondary: #0B1F3D;
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 body {
-  background: var(--color-background);
-  color: var(--color-foreground);
+  background: #06142A;
+  color: white;
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 @keyframes twinkle {
@@ -28,4 +26,8 @@ body {
 
 .animate-float {
   animation: float 8s ease-in-out infinite;
+}
+
+.font-orbitron {
+  font-family: 'Orbitron', monospace;
 }
