@@ -5,15 +5,15 @@ import Link from 'next/link'
 export default function GamePage() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [mostrarMenu, setMostrarMenu] = useState(true)
-  const gameRunning = useRef(false)
-  const animationRef = useRef<number>()
-  const playerX = useRef(50)
+  const gameRunning = useRef<boolean>(false)
+  const animationRef = useRef<number | undefined>(undefined)
+  const playerX = useRef<number>(50)
   const starsRef = useRef<Array<{x: number, y: number}>>([])
   const meteorsRef = useRef<Array<{x: number, y: number}>>([])
   const effectsRef = useRef<Array<{x: number, y: number, type: string, life: number}>>([])
-  const scoreRef = useRef(0)
-  const timeRef = useRef(0)
-  const gameLoopRef = useRef<NodeJS.Timeout>()
+  const scoreRef = useRef<number>(0)
+  const timeRef = useRef<number>(0)
+  const gameLoopRef = useRef<NodeJS.Timeout | undefined>(undefined)
   
   useEffect(() => {
     const canvas = canvasRef.current
@@ -38,11 +38,9 @@ export default function GamePage() {
     const draw = () => {
       if (!ctx || !canvas) return
       
-      // Fundo
       ctx.fillStyle = '#06142A'
       ctx.fillRect(0, 0, canvas.width, canvas.height)
       
-      // Estrelas de fundo
       for (let i = 0; i < 150; i++) {
         if (!window['star' + i]) {
           window['star' + i] = { x: Math.random() * canvas.width, y: Math.random() * canvas.height, size: Math.random() * 2 + 1 }
@@ -51,7 +49,6 @@ export default function GamePage() {
         ctx.fillRect(window['star' + i].x, window['star' + i].y, window['star' + i].size, window['star' + i].size)
       }
       
-      // Efeitos de animação
       effectsRef.current = effectsRef.current.filter(effect => {
         effect.life -= 2
         if (effect.life <= 0) return false
@@ -61,14 +58,12 @@ export default function GamePage() {
         if (effect.type === 'star') {
           ctx.fillStyle = '#FFD700'
           ctx.fillText('⭐', effect.x, effect.y)
-          // Texto +10
           ctx.font = `bold ${20 + (30 - effect.life)}px Arial`
           ctx.fillStyle = '#4ade80'
           ctx.fillText('+10', effect.x + 20, effect.y - 20)
         } else if (effect.type === 'meteor') {
           ctx.fillStyle = '#f87171'
           ctx.fillText('💥', effect.x, effect.y)
-          // Texto -5
           ctx.font = `bold ${20 + (30 - effect.life)}px Arial`
           ctx.fillStyle = '#f87171'
           ctx.fillText('-5', effect.x + 20, effect.y - 20)
@@ -77,30 +72,24 @@ export default function GamePage() {
         return true
       })
       
-      // Estrelas
       starsRef.current.forEach(star => {
         ctx.font = '32px Arial'
         ctx.fillStyle = '#FFD700'
-        ctx.fillText('⭐', star.x, star.y)
-        // Brilho
         ctx.shadowBlur = 10
         ctx.shadowColor = '#FFD700'
         ctx.fillText('⭐', star.x, star.y)
         ctx.shadowBlur = 0
       })
       
-      // Meteoros
       meteorsRef.current.forEach(meteor => {
         ctx.font = '38px Arial'
         ctx.fillStyle = '#f87171'
-        ctx.fillText('💥', meteor.x, meteor.y)
         ctx.shadowBlur = 8
         ctx.shadowColor = '#f87171'
         ctx.fillText('💥', meteor.x, meteor.y)
         ctx.shadowBlur = 0
       })
       
-      // Nave
       const naveX = (playerX.current / 100) * canvas.width
       const naveY = canvas.height - 80
       ctx.font = '60px Arial'
@@ -110,7 +99,6 @@ export default function GamePage() {
       ctx.fillText('🚀', naveX - 30, naveY)
       ctx.shadowBlur = 0
       
-      // HUD
       ctx.font = 'bold 26px Orbitron'
       ctx.fillStyle = '#D7B65D'
       ctx.fillText(`⭐ ${scoreRef.current}`, 20, 50)
@@ -141,7 +129,6 @@ export default function GamePage() {
     effectsRef.current = []
     playerX.current = 50
     
-    // Timer do jogo
     const timer = setInterval(() => {
       if (!gameRunning.current) {
         clearInterval(timer)
@@ -154,7 +141,6 @@ export default function GamePage() {
       }
     }, 1000)
     
-    // Loop do jogo
     gameLoopRef.current = setInterval(() => {
       if (!gameRunning.current) return
       
@@ -163,7 +149,6 @@ export default function GamePage() {
       const width = canvas.width
       const height = canvas.height
       
-      // Gerar estrelas
       if (Math.random() < 0.35) {
         starsRef.current.push({
           x: Math.random() * (width - 60) + 30,
@@ -171,7 +156,6 @@ export default function GamePage() {
         })
       }
       
-      // Gerar meteoros
       if (Math.random() < 0.12) {
         meteorsRef.current.push({
           x: Math.random() * (width - 60) + 30,
@@ -179,23 +163,19 @@ export default function GamePage() {
         })
       }
       
-      // Área de colisão da nave (círculo)
       const naveX = (playerX.current / 100) * width
       const naveY = height - 80
       const raioColisao = 35
       
-      // Mover estrelas e verificar colisão
       starsRef.current = starsRef.current.filter(star => {
         star.y += 9
         
-        // Cálculo de distância para colisão mais precisa
         const dx = star.x - naveX
         const dy = star.y - naveY
         const distancia = Math.sqrt(dx * dx + dy * dy)
         
         if (distancia < raioColisao) {
           scoreRef.current += 10
-          // Adicionar efeito de explosão
           effectsRef.current.push({
             x: naveX,
             y: naveY,
@@ -207,7 +187,6 @@ export default function GamePage() {
         return star.y < height
       })
       
-      // Mover meteoros e verificar colisão
       meteorsRef.current = meteorsRef.current.filter(meteor => {
         meteor.y += 7
         
@@ -217,7 +196,6 @@ export default function GamePage() {
         
         if (distancia < raioColisao) {
           scoreRef.current = Math.max(0, scoreRef.current - 5)
-          // Adicionar efeito de explosão
           effectsRef.current.push({
             x: naveX,
             y: naveY,
@@ -277,9 +255,9 @@ export default function GamePage() {
           <h1 style={{ fontFamily: 'Orbitron', fontSize: '36px', color: '#D7B65D', marginBottom: '20px' }}>🚀 DESAFIO LUNAR</h1>
           <p style={{ color: 'white', marginBottom: '30px', fontSize: '18px' }}>Escolha a dificuldade:</p>
           <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <button onClick={() => startGame(15)} style={{ background: '#4ade80', padding: '15px 25px', borderRadius: '10px', border: 'none', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer', transition: 'transform 0.2s' }}>🌱 Fácil - 15s</button>
-            <button onClick={() => startGame(20)} style={{ background: '#facc15', padding: '15px 25px', borderRadius: '10px', border: 'none', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer', transition: 'transform 0.2s' }}>⚡ Médio - 20s</button>
-            <button onClick={() => startGame(30)} style={{ background: '#f87171', padding: '15px 25px', borderRadius: '10px', border: 'none', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer', transition: 'transform 0.2s' }}>🔥 Difícil - 30s</button>
+            <button onClick={() => startGame(15)} style={{ background: '#4ade80', padding: '15px 25px', borderRadius: '10px', border: 'none', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' }}>🌱 Fácil - 15s</button>
+            <button onClick={() => startGame(20)} style={{ background: '#facc15', padding: '15px 25px', borderRadius: '10px', border: 'none', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' }}>⚡ Médio - 20s</button>
+            <button onClick={() => startGame(30)} style={{ background: '#f87171', padding: '15px 25px', borderRadius: '10px', border: 'none', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' }}>🔥 Difícil - 30s</button>
           </div>
           <Link href="/">
             <button style={{ marginTop: '30px', background: '#0B1F3D', color: '#D7B65D', padding: '10px 25px', borderRadius: '8px', border: '1px solid #D7B65D', cursor: 'pointer' }}>← Voltar ao Site</button>
