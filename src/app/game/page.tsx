@@ -14,6 +14,7 @@ export default function GamePage() {
   const scoreRef = useRef<number>(0)
   const timeRef = useRef<number>(0)
   const gameLoopRef = useRef<NodeJS.Timeout | undefined>(undefined)
+  const backgroundStars = useRef<Array<{x: number, y: number, size: number}>>([])
   
   useEffect(() => {
     const canvas = canvasRef.current
@@ -24,6 +25,15 @@ export default function GamePage() {
     const resize = () => {
       canvas.width = window.innerWidth
       canvas.height = window.innerHeight
+      // Reset background stars on resize
+      backgroundStars.current = []
+      for (let i = 0; i < 150; i++) {
+        backgroundStars.current.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          size: Math.random() * 2 + 1
+        })
+      }
     }
     resize()
     window.addEventListener('resize', resize)
@@ -41,14 +51,13 @@ export default function GamePage() {
       ctx.fillStyle = '#06142A'
       ctx.fillRect(0, 0, canvas.width, canvas.height)
       
-      for (let i = 0; i < 150; i++) {
-        if (!window['star' + i]) {
-          window['star' + i] = { x: Math.random() * canvas.width, y: Math.random() * canvas.height, size: Math.random() * 2 + 1 }
-        }
+      // Draw background stars
+      for (const star of backgroundStars.current) {
         ctx.fillStyle = `rgba(255, 255, 255, ${Math.random() * 0.5 + 0.3})`
-        ctx.fillRect(window['star' + i].x, window['star' + i].y, window['star' + i].size, window['star' + i].size)
+        ctx.fillRect(star.x, star.y, star.size, star.size)
       }
       
+      // Draw effects
       effectsRef.current = effectsRef.current.filter(effect => {
         effect.life -= 2
         if (effect.life <= 0) return false
@@ -72,6 +81,7 @@ export default function GamePage() {
         return true
       })
       
+      // Draw stars
       starsRef.current.forEach(star => {
         ctx.font = '32px Arial'
         ctx.fillStyle = '#FFD700'
@@ -81,6 +91,7 @@ export default function GamePage() {
         ctx.shadowBlur = 0
       })
       
+      // Draw meteors
       meteorsRef.current.forEach(meteor => {
         ctx.font = '38px Arial'
         ctx.fillStyle = '#f87171'
@@ -90,6 +101,7 @@ export default function GamePage() {
         ctx.shadowBlur = 0
       })
       
+      // Draw spaceship
       const naveX = (playerX.current / 100) * canvas.width
       const naveY = canvas.height - 80
       ctx.font = '60px Arial'
@@ -99,6 +111,7 @@ export default function GamePage() {
       ctx.fillText('🚀', naveX - 30, naveY)
       ctx.shadowBlur = 0
       
+      // Draw HUD
       ctx.font = 'bold 26px Orbitron'
       ctx.fillStyle = '#D7B65D'
       ctx.fillText(`⭐ ${scoreRef.current}`, 20, 50)
@@ -149,6 +162,7 @@ export default function GamePage() {
       const width = canvas.width
       const height = canvas.height
       
+      // Generate stars
       if (Math.random() < 0.35) {
         starsRef.current.push({
           x: Math.random() * (width - 60) + 30,
@@ -156,6 +170,7 @@ export default function GamePage() {
         })
       }
       
+      // Generate meteors
       if (Math.random() < 0.12) {
         meteorsRef.current.push({
           x: Math.random() * (width - 60) + 30,
@@ -167,6 +182,7 @@ export default function GamePage() {
       const naveY = height - 80
       const raioColisao = 35
       
+      // Move stars and check collision
       starsRef.current = starsRef.current.filter(star => {
         star.y += 9
         
@@ -187,6 +203,7 @@ export default function GamePage() {
         return star.y < height
       })
       
+      // Move meteors and check collision
       meteorsRef.current = meteorsRef.current.filter(meteor => {
         meteor.y += 7
         
