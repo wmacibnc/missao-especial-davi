@@ -1,0 +1,35 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Convidado {
+  id              String          @id @default(cuid())
+  nome            String
+  telefone        String
+  token           String          @unique
+  limiteConvites  Int             @default(0)
+  confirmado      Boolean         @default(false)
+  checkinRealizado Boolean        @default(false)
+  createdAt       DateTime        @default(now())
+  acompanhantes   Acompanhante[]
+}
+
+model Acompanhante {
+  id          String   @id @default(cuid())
+  nome        String
+  documento   String
+  convidadoId String
+  convidado   Convidado @relation(fields: [convidadoId], references: [id], onDelete: Cascade)
+}
+
+model Ranking {
+  id          String   @id @default(cuid())
+  nome        String
+  pontuacao   Int
+  createdAt   DateTime @default(now())
+}
