@@ -11,7 +11,7 @@ export default function AdminHome() {
     fetch('/api/admin/stats')
       .then(res => res.json())
       .then(setStats)
-      .catch(() => {})
+      .catch(() => { })
   }, [])
 
   const handleLogout = async () => {
@@ -40,7 +40,7 @@ export default function AdminHome() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
           <Link href="/admin/convidados"><div style={{ background: '#112D59', padding: '32px', borderRadius: '8px', cursor: 'pointer', textAlign: 'center' }}><div style={{ fontSize: '48px' }}>👥</div><h3 style={{ color: '#D7B65D', marginTop: '12px' }}>Convidados</h3><p style={{ color: '#9ca3af', fontSize: '14px' }}>Cadastrar e enviar convites</p></div></Link>
           <Link href="/admin/presencas"><div style={{ background: '#112D59', padding: '32px', borderRadius: '8px', cursor: 'pointer', textAlign: 'center' }}><div style={{ fontSize: '48px' }}>📋</div><h3 style={{ color: '#D7B65D', marginTop: '12px' }}>Presenças</h3><p style={{ color: '#9ca3af', fontSize: '14px' }}>Lista e exportar Excel</p></div></Link>
-          <Link href="/admin/checkin"><div style={{ background: '#112D59', padding: '32px', borderRadius: '8px', cursor: 'pointer', textAlign: 'center' }}><div style={{ fontSize: '48px' }}>📱</div><h3 style={{ color: '#D7B65D', marginTop: '12px' }}>Check-in</h3><p style={{ color: '#9ca3af', fontSize: '14px' }}>Leitor de QR Code</p></div></Link>
+          <Link href="/admin/ranking"><div style={{ background: '#112D59', padding: '32px', borderRadius: '8px', cursor: 'pointer', textAlign: 'center' }}><div style={{ fontSize: '48px' }}>🏆</div><h3 style={{ color: '#D7B65D', marginTop: '12px' }}>Ranking</h3><p style={{ color: '#9ca3af', fontSize: '14px' }}>Gerenciar pontuações</p></div></Link>
         </div>
       </div>
       <style jsx>{`@keyframes twinkle { 0%,100% { opacity: 0.2; } 50% { opacity: 1; } } .animate-twinkle { animation: twinkle 3s ease-in-out infinite; }`}</style>

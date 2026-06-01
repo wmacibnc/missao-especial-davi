@@ -292,7 +292,7 @@ export default function GamePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nome: playerName, pontuacao: finalScore })
       }).then(() => {
-        alert('✅ Pontuação salva no Hall da Fama!')
+        console.log('✅ Pontuação salva no Hall da Fama!')
         window.location.href = '/ranking'
       }).catch(() => {
         alert('❌ Erro ao salvar')
