@@ -47,7 +47,7 @@ export default function ConvidadosPage() {
         method: 'DELETE'
       })
       if (res.ok) {
-        alert(`✅ Convidado "${nome}" excluído com sucesso!`)
+        console.log(`✅ Convidado "${nome}" excluído com sucesso!`);
         carregarConvidados()
       } else {
         alert('❌ Erro ao excluir convidado')
@@ -69,7 +69,22 @@ export default function ConvidadosPage() {
 
   const enviarWhatsApp = (telefone: string, token: string) => {
     const link = `${window.location.origin}/convite/${token}`
-    const mensagem = `🎉 MISSÃO ESPACIAL DAVI 🚀\n\nOlá! Você está convidado para a festa de 7 anos do Davi!\n\n📅 11/07/2026 às 17h\n📍 Living Park Sul - Condomínio Living\n\n🔗 Confirme: ${link}\n\nContamos com você! 🌟`
+    const mensagem = `🚀 MISSAO ESPACIAL DAVI - 7 ANOS 🚀
+
+✨ VOCE ESTA CONVIDADO! ✨
+
+• Data: 11/07/2026
+• Horario: 17h
+• Local: Living Park Sul - Salao bloco E
+
+🔗 CONFIRMAR PRESENCA:
+${link}
+
+⚠️ Confirmar ate 25/05/2026
+
+🎉 Sua presenca e muito importante!
+🚀 Contamos com voce!`
+
     window.open(`https://wa.me/55${telefone}?text=${encodeURIComponent(mensagem)}`, '_blank')
   }
 

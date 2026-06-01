@@ -8,7 +8,7 @@ export default function ConvitePage() {
   const token = params.token as string
   
   const [convidado, setConvidado] = useState<any>(null)
-  const [acompanhantes, setAcompanhantes] = useState([{ nome: '', documento: '' }])
+  const [acompanhantes, setAcompanhantes] = useState<Array<{nome: string, documento: string}>>([])
   const [loading, setLoading] = useState(true)
   const [confirmado, setConfirmado] = useState(false)
   const [qrCodeGerado, setQrCodeGerado] = useState(false)
@@ -24,8 +24,10 @@ export default function ConvitePage() {
       const data = await res.json()
       setConvidado(data)
       setConfirmado(data.confirmado)
-      if (data.limiteConvites > 0) {
-        setAcompanhantes(Array(data.limiteConvites).fill({ nome: '', documento: '' }))
+      // Inicializar array de acompanhantes com campos vazios para o limite permitido
+      if (data.limiteConvites > 0 && !data.confirmado) {
+        const camposVazios = Array(data.limiteConvites).fill({ nome: '', documento: '' })
+        setAcompanhantes(camposVazios)
       }
     } catch (error) {
       console.error('Erro ao carregar convite:', error)
@@ -34,11 +36,18 @@ export default function ConvitePage() {
     }
   }
 
+  const atualizarAcompanhante = (index: number, campo: string, valor: string) => {
+    const novos = [...acompanhantes]
+    novos[index] = { ...novos[index], [campo]: valor }
+    setAcompanhantes(novos)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSubmeter(true)
     
-    const acompanhantesFiltrados = acompanhantes.filter(a => a.nome.trim() !== '')
+    // Filtrar apenas acompanhantes com nome preenchido
+    const acompanhantesFiltrados = acompanhantes.filter(a => a.nome && a.nome.trim() !== '')
     
     try {
       const res = await fetch(`/api/convite/${token}/confirmar`, {
@@ -101,17 +110,6 @@ export default function ConvitePage() {
               {convidado.nome}, sua presença foi confirmada com sucesso!
             </p>
             
-            {qrCodeGerado && (
-              <div style={{ marginBottom: '32px' }}>
-                <div style={{ background: 'white', padding: '20px', borderRadius: '8px', display: 'inline-block' }}>
-                  <QRCode value={qrCodeValue} size={200} />
-                </div>
-                <p style={{ color: '#9ca3af', fontSize: '12px', marginTop: '12px' }}>
-                  Guarde este QR Code para o check-in no evento!
-                </p>
-              </div>
-            )}
-            
             <a href="/">
               <button style={{
                 background: 'linear-gradient(135deg, #D7B65D, #FFD700)',
@@ -164,13 +162,13 @@ export default function ConvitePage() {
             ) : (
               <>
                 <p style={{ color: '#9ca3af', marginBottom: '16px', fontSize: '14px' }}>
-                  Você pode levar até {convidado.limiteConvites} acompanhante(s)
+                  Você pode levar até <strong>{convidado.limiteConvites}</strong> acompanhante(s)
                 </p>
-                <p style={{ color: '#9ca3af', marginBottom: '16px', fontSize: '12px' }}>
-                  💡 Deixe os campos em branco se não quiser levar acompanhantes
+                <p style={{ color: '#D7B65D', marginBottom: '16px', fontSize: '12px' }}>
+                  💡 Preencha apenas os nomes dos acompanhantes que irão com você. Deixe em branco os que não forem.
                 </p>
 
-                {[...Array(convidado.limiteConvites)].map((_, index) => (
+                {acompanhantes.map((acomp, index) => (
                   <div key={index} style={{
                     borderTop: index > 0 ? '1px solid rgba(215, 182, 93, 0.2)' : 'none',
                     paddingTop: index > 0 ? '16px' : '0',
@@ -182,12 +180,8 @@ export default function ConvitePage() {
                     <input
                       type="text"
                       placeholder="Nome completo (opcional)"
-                      value={acompanhantes[index]?.nome || ''}
-                      onChange={(e) => {
-                        const newAcompanhantes = [...acompanhantes]
-                        newAcompanhantes[index] = { ...newAcompanhantes[index], nome: e.target.value }
-                        setAcompanhantes(newAcompanhantes)
-                      }}
+                      value={acomp.nome}
+                      onChange={(e) => atualizarAcompanhante(index, 'nome', e.target.value)}
                       style={{
                         width: '100%',
                         padding: '12px',

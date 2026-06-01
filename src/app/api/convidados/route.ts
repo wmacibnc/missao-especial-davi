@@ -23,7 +23,9 @@ export async function GET() {
   }
 
   const convidados = await prisma.convidado.findMany({
-    include: { acompanhantes: true },
+    include: { 
+      acompanhantes: true  // Incluir acompanhantes
+    },
     orderBy: { createdAt: 'desc' }
   })
   
@@ -40,7 +42,13 @@ export async function POST(request: Request) {
   const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
   
   const convidado = await prisma.convidado.create({
-    data: { nome, telefone, token, limiteConvites: limiteConvites || 0 }
+    data: { 
+      nome, 
+      telefone, 
+      token, 
+      limiteConvites: limiteConvites || 0 
+    },
+    include: { acompanhantes: true }
   })
   
   return NextResponse.json(convidado)
@@ -56,7 +64,8 @@ export async function PUT(request: Request) {
   
   const convidado = await prisma.convidado.update({
     where: { id },
-    data: { confirmado }
+    data: { confirmado },
+    include: { acompanhantes: true }
   })
   
   return NextResponse.json(convidado)

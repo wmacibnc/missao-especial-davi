@@ -16,6 +16,9 @@ export default function GamePage() {
   const gameLoopRef = useRef<NodeJS.Timeout | undefined>(undefined)
   const backgroundStars = useRef<Array<{x: number, y: number, size: number}>>([])
   
+  // Referências para touch/mouse
+  const touchActive = useRef<boolean>(false)
+  
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -25,7 +28,6 @@ export default function GamePage() {
     const resize = () => {
       canvas.width = window.innerWidth
       canvas.height = window.innerHeight
-      // Reset background stars on resize
       backgroundStars.current = []
       for (let i = 0; i < 150; i++) {
         backgroundStars.current.push({
@@ -38,12 +40,52 @@ export default function GamePage() {
     resize()
     window.addEventListener('resize', resize)
     
+    // Controles de teclado
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'ArrowLeft') playerX.current = Math.max(5, playerX.current - 12)
       if (e.key === 'ArrowRight') playerX.current = Math.min(95, playerX.current + 12)
       if (e.key === 'Escape' && gameRunning.current) endGame()
     }
     window.addEventListener('keydown', handleKeyDown)
+    
+    // Controles de mouse (movimento)
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!gameRunning.current) return
+      const canvas = canvasRef.current
+      if (!canvas) return
+      const rect = canvas.getBoundingClientRect()
+      const mouseX = e.clientX - rect.left
+      const percentX = (mouseX / rect.width) * 100
+      playerX.current = Math.min(95, Math.max(5, percentX))
+    }
+    window.addEventListener('mousemove', handleMouseMove)
+    
+    // Controles de touch (movimento)
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!gameRunning.current) return
+      e.preventDefault()
+      const canvas = canvasRef.current
+      if (!canvas) return
+      const rect = canvas.getBoundingClientRect()
+      const touch = e.touches[0]
+      const touchX = touch.clientX - rect.left
+      const percentX = (touchX / rect.width) * 100
+      playerX.current = Math.min(95, Math.max(5, percentX))
+    }
+    
+    const handleTouchStart = (e: TouchEvent) => {
+      if (!gameRunning.current) return
+      e.preventDefault()
+      touchActive.current = true
+    }
+    
+    const handleTouchEnd = () => {
+      touchActive.current = false
+    }
+    
+    window.addEventListener('touchmove', handleTouchMove, { passive: false })
+    window.addEventListener('touchstart', handleTouchStart)
+    window.addEventListener('touchend', handleTouchEnd)
     
     const draw = () => {
       if (!ctx || !canvas) return
@@ -117,6 +159,13 @@ export default function GamePage() {
       ctx.fillText(`⭐ ${scoreRef.current}`, 20, 50)
       ctx.fillText(`⏱️ ${timeRef.current}s`, canvas.width - 150, 50)
       
+      // Aviso de controles
+      if (gameRunning.current) {
+        ctx.font = '14px Arial'
+        ctx.fillStyle = '#9ca3af'
+        ctx.fillText('Mouse: mova o cursor | Touch: arraste o dedo', canvas.width / 2 - 150, canvas.height - 20)
+      }
+      
       animationRef.current = requestAnimationFrame(draw)
     }
     
@@ -125,6 +174,10 @@ export default function GamePage() {
     return () => {
       window.removeEventListener('resize', resize)
       window.removeEventListener('keydown', handleKeyDown)
+      window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('touchmove', handleTouchMove)
+      window.removeEventListener('touchstart', handleTouchStart)
+      window.removeEventListener('touchend', handleTouchEnd)
       if (animationRef.current) cancelAnimationFrame(animationRef.current)
       if (gameLoopRef.current) clearInterval(gameLoopRef.current)
     }
@@ -180,7 +233,7 @@ export default function GamePage() {
       
       const naveX = (playerX.current / 100) * width
       const naveY = height - 80
-      const raioColisao = 35
+      const raioColisao = 40
       
       // Move stars and check collision
       starsRef.current = starsRef.current.filter(star => {
@@ -276,13 +329,13 @@ export default function GamePage() {
             <button onClick={() => startGame(20)} style={{ background: '#facc15', padding: '15px 25px', borderRadius: '10px', border: 'none', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' }}>⚡ Médio - 20s</button>
             <button onClick={() => startGame(30)} style={{ background: '#f87171', padding: '15px 25px', borderRadius: '10px', border: 'none', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' }}>🔥 Difícil - 30s</button>
           </div>
-          <Link href="/">
-            <button style={{ marginTop: '30px', background: '#0B1F3D', color: '#D7B65D', padding: '10px 25px', borderRadius: '8px', border: '1px solid #D7B65D', cursor: 'pointer' }}>← Voltar ao Site</button>
-          </Link>
           <div style={{ marginTop: '25px', paddingTop: '20px', borderTop: '1px solid rgba(215,182,93,0.3)' }}>
             <p style={{ color: '#9ca3af', fontSize: '12px' }}>⭐ Estrela: +10 pontos | 💥 Meteoro: -5 pontos</p>
-            <p style={{ color: '#9ca3af', fontSize: '12px' }}>🎮 Use as setas ← → para mover a nave</p>
+            <p style={{ color: '#9ca3af', fontSize: '12px' }}>🎮 Mouse: mova o cursor | Touch: arraste o dedo | Teclado: ← →</p>
           </div>
+          <Link href="/">
+            <button style={{ marginTop: '20px', background: '#0B1F3D', color: '#D7B65D', padding: '10px 25px', borderRadius: '8px', border: '1px solid #D7B65D', cursor: 'pointer' }}>← Voltar ao Site</button>
+          </Link>
         </div>
       )}
     </div>
