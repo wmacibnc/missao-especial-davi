@@ -41,6 +41,32 @@ export default function ConvidadosPage() {
     }
   }
 
+  const excluirConvidado = async (id: string, nome: string) => {
+    if (confirm(`⚠️ Tem certeza que deseja EXCLUIR permanentemente o convidado "${nome}"?\n\nEsta ação não pode ser desfeita!`)) {
+      const res = await fetch(`/api/convidados/${id}`, {
+        method: 'DELETE'
+      })
+      if (res.ok) {
+        alert(`✅ Convidado "${nome}" excluído com sucesso!`)
+        carregarConvidados()
+      } else {
+        alert('❌ Erro ao excluir convidado')
+      }
+    }
+  }
+
+  const excluirConfirmacao = async (id: string, nome: string) => {
+    if (confirm(`⚠️ Tem certeza que deseja remover a CONFIRMAÇÃO do convidado "${nome}"?\n\nEle precisará confirmar novamente.`)) {
+      await fetch('/api/convidados', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, confirmado: false })
+      })
+      alert(`✅ Confirmação removida para "${nome}"`)
+      carregarConvidados()
+    }
+  }
+
   const enviarWhatsApp = (telefone: string, token: string) => {
     const link = `${window.location.origin}/convite/${token}`
     const mensagem = `🎉 MISSÃO ESPACIAL DAVI 🚀\n\nOlá! Você está convidado para a festa de 7 anos do Davi!\n\n📅 11/07/2026 às 17h\n📍 Living Park Sul - Condomínio Living\n\n🔗 Confirme: ${link}\n\nContamos com você! 🌟`
@@ -88,24 +114,25 @@ export default function ConvidadosPage() {
                     <td style={{ padding: '12px', color: 'white' }}>{conv.telefone}</td>
                     <td style={{ padding: '12px', textAlign: 'center', color: 'white' }}>{conv.limiteConvites === 0 ? '🚫' : conv.limiteConvites}</td>
                     <td style={{ padding: '12px', textAlign: 'center' }}>
-                      <button
-                        onClick={() => toggleConfirmacao(conv.id, conv.confirmado)}
-                        style={{
-                          background: conv.confirmado ? 'rgba(239,68,68,0.2)' : 'rgba(74,222,128,0.2)',
-                          color: conv.confirmado ? '#f87171' : '#4ade80',
-                          padding: '4px 12px',
-                          borderRadius: '20px',
-                          border: 'none',
-                          cursor: 'pointer',
-                          fontSize: '12px'
-                        }}
-                      >
+                      <span style={{
+                        background: conv.confirmado ? 'rgba(74,222,128,0.2)' : 'rgba(250,204,21,0.2)',
+                        color: conv.confirmado ? '#4ade80' : '#facc15',
+                        padding: '4px 12px',
+                        borderRadius: '20px',
+                        fontSize: '12px'
+                      }}>
                         {conv.confirmado ? '✅ Confirmado' : '⏳ Pendente'}
-                      </button>
+                      </span>
                     </td>
                     <td style={{ padding: '12px', textAlign: 'center' }}>
-                      <button onClick={() => enviarWhatsApp(conv.telefone, conv.token)} style={{ background: '#25D366', color: 'white', padding: '6px 12px', borderRadius: '4px', border: 'none', cursor: 'pointer', marginRight: '8px' }}>📱 WhatsApp</button>
-                      <button onClick={() => copiarLink(conv.token)} style={{ background: '#3b82f6', color: 'white', padding: '6px 12px', borderRadius: '4px', border: 'none', cursor: 'pointer' }}>🔗 Copiar Link</button>
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                        <button onClick={() => enviarWhatsApp(conv.telefone, conv.token)} style={{ background: '#25D366', color: 'white', padding: '6px 12px', borderRadius: '4px', border: 'none', cursor: 'pointer', fontSize: '12px' }} title="Enviar WhatsApp">📱</button>
+                        <button onClick={() => copiarLink(conv.token)} style={{ background: '#3b82f6', color: 'white', padding: '6px 12px', borderRadius: '4px', border: 'none', cursor: 'pointer', fontSize: '12px' }} title="Copiar Link">🔗</button>
+                        {conv.confirmado && (
+                          <button onClick={() => excluirConfirmacao(conv.id, conv.nome)} style={{ background: '#facc15', color: '#06142A', padding: '6px 12px', borderRadius: '4px', border: 'none', cursor: 'pointer', fontSize: '12px' }} title="Remover Confirmação">❌</button>
+                        )}
+                        <button onClick={() => excluirConvidado(conv.id, conv.nome)} style={{ background: '#ef4444', color: 'white', padding: '6px 12px', borderRadius: '4px', border: 'none', cursor: 'pointer', fontSize: '12px' }} title="Excluir Convidado">🗑️</button>
+                      </div>
                     </td>
                   </tr>
                 ))}

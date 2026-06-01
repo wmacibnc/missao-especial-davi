@@ -22,7 +22,7 @@ export default function LoginPage() {
       })
 
       if (res.ok) {
-        router.push('/admin/dashboard')
+        router.push('/admin')
       } else {
         const data = await res.json()
         setError(data.error || 'Credenciais inválidas')
@@ -138,7 +138,6 @@ export default function LoginPage() {
           color: '#9ca3af',
           marginTop: '16px'
         }}>
-          Demo: admin@missaoespacial.com / admin123
         </p>
       </div>
     </div>

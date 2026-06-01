@@ -1,11 +1,53 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 
 export default function Home() {
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 })
   const [showIntro, setShowIntro] = useState(true)
   const [countdownValue, setCountdownValue] = useState(3)
+  const [musicaTocando, setMusicaTocando] = useState(true)
+  const [audio, setAudio] = useState<HTMLAudioElement | null>(null)
+  const [audioReady, setAudioReady] = useState(false)
+
+  useEffect(() => {
+    // Inicializar áudio com start no segundo 30
+    const audioElement = new Audio('/musica/also-sprach-zarathustra.mp3')
+    audioElement.loop = true
+    audioElement.volume = 0.3
+    audioElement.preload = 'auto'
+    
+    // Quando estiver pronto, iniciar no segundo 30
+    const handleCanPlay = () => {
+      audioElement.play().catch(e => console.log('Auto-play:', e))
+      setAudioReady(true)
+    }
+    
+    audioElement.addEventListener('canplaythrough', handleCanPlay)
+    
+    setAudio(audioElement)
+    setMusicaTocando(true)
+
+    return () => {
+      audioElement.removeEventListener('canplaythrough', handleCanPlay)
+      if (audioElement) {
+        audioElement.pause()
+        audioElement.currentTime = 0
+      }
+    }
+  }, [])
+
+  const toggleMusica = () => {
+    if (audio) {
+      if (musicaTocando) {
+        audio.pause()
+        setMusicaTocando(false)
+      } else {
+        audio.play()
+        setMusicaTocando(true)
+      }
+    }
+  }
 
   useEffect(() => {
     if (countdownValue > 0) {
@@ -41,6 +83,22 @@ export default function Home() {
     delay: Math.random() * 3
   }))
 
+  // Vídeos convertidos para embed
+  const videos = [
+    {
+      id: 1,
+      title: "Como eu aprendi a andar - Davi",
+      url: "https://www.youtube.com/embed/AmbYgneOe8M",
+      thumbnail: "https://img.youtube.com/vi/AmbYgneOe8M/0.jpg"
+    },
+    {
+      id: 2,
+      title: "Meu primeiro ano na escola - Davi",
+      url: "https://www.youtube.com/embed/rrP3dRDRJws",
+      thumbnail: "https://img.youtube.com/vi/rrP3dRDRJws/0.jpg"
+    }
+  ]
+
   if (showIntro) {
     return (
       <div style={{ minHeight: '100vh', background: '#06142A', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
@@ -66,7 +124,6 @@ export default function Home() {
     )
   }
 
-  
   return (
     <>
       <div style={{ position: 'fixed', inset: 0, zIndex: -10, background: '#06142A', overflow: 'hidden' }}>
@@ -75,8 +132,34 @@ export default function Home() {
         ))}
       </div>
 
+      {/* Botão de música flutuante */}
+      <button
+        onClick={toggleMusica}
+        style={{
+          position: 'fixed',
+          bottom: '20px',
+          right: '20px',
+          width: '50px',
+          height: '50px',
+          borderRadius: '50%',
+          background: 'rgba(11,31,61,0.9)',
+          border: '1px solid #D7B65D',
+          color: '#D7B65D',
+          fontSize: '24px',
+          cursor: 'pointer',
+          zIndex: 100,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          transition: 'all 0.3s'
+        }}
+        title={musicaTocando ? 'Pausar música' : 'Tocar música'}
+      >
+        {musicaTocando ? '🔊' : '🔇'}
+      </button>
+
       <div style={{ minHeight: '100vh', padding: '48px 16px' }}>
-        <div style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'center' }}>
+        <div style={{ maxWidth: '1000px', margin: '0 auto', textAlign: 'center' }}>
           <h1 style={{ fontFamily: 'Orbitron', fontSize: '48px', color: '#D7B65D' }}>🚀 MISSÃO ESPACIAL</h1>
           <h2 style={{ fontFamily: 'Orbitron', fontSize: '36px', color: 'white' }}>7º ANO DO DAVI</h2>
           
@@ -86,23 +169,14 @@ export default function Home() {
             <p style={{ color: '#D7B65D', fontSize: '24px', fontWeight: 'bold' }}>🚀 Você não pode perder! 🚀</p>
           </div>
           
-          {/* Foto com object-position para centralizar melhor */}
+          {/* Foto */}
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '48px' }}>
-            <div style={{ width: '300px', height: '300px', borderRadius: '50%', overflow: 'hidden', border: '4px solid #D7B65D', boxShadow: '0 0 30px rgba(215,182,93,0.5)' }}>
+            <div style={{ width: '400px', height: '400px', borderRadius: '50%', overflow: 'hidden', border: '4px solid #D7B65D', boxShadow: '0 0 30px rgba(215,182,93,0.5)' }}>
               <img src="/fotos/davi2.jpeg" alt="Davi" style={{ width: '100%', height: '170%', objectFit: 'cover', objectPosition: 'top 20%' }} />
             </div>
           </div>
 
-          {/* Card de Localização */}
-          <div style={{ background: 'rgba(17,45,89,0.95)', padding: '28px', borderRadius: '16px', marginBottom: '32px', border: '1px solid #D7B65D' }}>
-            <h3 style={{ fontFamily: 'Orbitron', fontSize: '24px', color: '#D7B65D', marginBottom: '8px' }}>📍 LOCALIZAÇÃO</h3>
-            <p style={{ fontSize: '18px', color: 'white', marginBottom: '4px' }}>Living Park Sul</p>
-            <p style={{ fontSize: '16px', color: '#D7B65D', marginBottom: '16px' }}>Condomínio Living</p>
-            <p style={{ fontSize: '20px', fontWeight: 'bold', color: '#FFD700', marginBottom: '16px' }}>11 de Julho de 2026 • 17h</p>
-            <a href="https://maps.app.goo.gl/Ab4gCngsNNd6ixraA" target="_blank" style={{ background: '#D7B65D', color: '#06142A', padding: '12px 24px', borderRadius: '8px', textDecoration: 'none', fontWeight: 'bold', display: 'inline-block' }}>Abrir no Google Maps →</a>
-          </div>
-
-            {/* Cards com números grandes */}
+          {/* Countdown */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', maxWidth: '500px', margin: '0 auto 32px' }}>
             <div style={{ background: 'rgba(11,31,61,0.8)', padding: '16px', borderRadius: '8px' }}>
               <div style={{ fontFamily: 'Orbitron', fontSize: '36px', color: '#D7B65D' }}>{timeLeft.days}</div>
@@ -122,10 +196,55 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Botões */}
-          <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
+          {/* Localização */}
+          <div style={{ background: 'rgba(17,45,89,0.95)', padding: '28px', borderRadius: '16px', marginBottom: '32px', border: '1px solid #D7B65D' }}>
+            <h3 style={{ fontFamily: 'Orbitron', fontSize: '24px', color: '#D7B65D', marginBottom: '8px' }}>📍 LOCALIZAÇÃO</h3>
+            <p style={{ fontSize: '18px', color: 'white', marginBottom: '4px' }}>Living Park Sul</p>
+            <p style={{ fontSize: '16px', color: '#D7B65D', marginBottom: '16px' }}>Condomínio Living</p>
+            <p style={{ fontSize: '20px', fontWeight: 'bold', color: '#FFD700', marginBottom: '16px' }}>11 de Julho de 2026 • 17h</p>
+            <a href="https://maps.app.goo.gl/Ab4gCngsNNd6ixraA" target="_blank" style={{ background: '#D7B65D', color: '#06142A', padding: '12px 24px', borderRadius: '8px', textDecoration: 'none', fontWeight: 'bold', display: 'inline-block' }}>Abrir no Google Maps →</a>
+          </div>
+
+          {/* Botões principais */}
+          <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '48px' }}>
             <Link href="/ranking"><button style={{ background: 'linear-gradient(135deg, #D7B65D, #FFD700)', color: '#06142A', padding: '12px 24px', borderRadius: '8px', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}>🏆 Hall da Fama</button></Link>
             <Link href="/game"><button style={{ background: 'linear-gradient(135deg, #D7B65D, #FFD700)', color: '#06142A', padding: '12px 24px', borderRadius: '8px', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}>🎮 Desafio Lunar</button></Link>
+          </div>
+
+          {/* Seção de vídeos - SEMPRE VISÍVEL */}
+          <div style={{
+            marginTop: '20px',
+            padding: '24px',
+            background: 'rgba(11,31,61,0.8)',
+            borderRadius: '16px',
+            border: '1px solid #D7B65D'
+          }}>
+            <h3 style={{ fontFamily: 'Orbitron', fontSize: '24px', color: '#D7B65D', marginBottom: '20px' }}>🎬 VÍDEOS DO DAVI</h3>
+            <div style={{ display: 'grid', gap: '24px', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
+              {videos.map(video => (
+                <div key={video.id} style={{
+                  background: '#06142A',
+                  borderRadius: '12px',
+                  overflow: 'hidden',
+                  border: '1px solid rgba(215,182,93,0.3)',
+                  transition: 'transform 0.3s'
+                }}>
+                  <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0 }}>
+                    <iframe
+                      src={video.url}
+                      title={video.title}
+                      style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  </div>
+                  <div style={{ padding: '16px' }}>
+                    <p style={{ color: '#D7B65D', fontWeight: 'bold', fontSize: '16px' }}>{video.title}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div style={{ marginTop: '48px', padding: '16px', background: 'rgba(215,182,93,0.1)', borderRadius: '8px' }}>
@@ -134,7 +253,9 @@ export default function Home() {
         </div>
       </div>
 
-      <style jsx>{`@keyframes twinkle { 0%,100% { opacity: 0.2; } 50% { opacity: 1; } }`}</style>
+      <style jsx>{`
+        @keyframes twinkle { 0%,100% { opacity: 0.2; } 50% { opacity: 1; } }
+      `}</style>
     </>
   )
 }
