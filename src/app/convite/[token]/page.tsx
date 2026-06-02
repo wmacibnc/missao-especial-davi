@@ -571,7 +571,7 @@ export default function ConvitePage() {
               
               {convidado.limiteConvites === 0 ? (
                 <div style={{ background: 'rgba(74,222,128,0.1)', padding: '16px', borderRadius: '8px', marginBottom: '24px', textAlign: 'center' }}>
-                  <p style={{ color: '#4ade80', fontSize: '18px' }}>✨ Este convite é apenas para você ✨</p>
+                  <p style={{ color: '#4ade80', fontSize: '18px' }}></p>
                 </div>
               ) : (
                 <>
