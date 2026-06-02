@@ -7,11 +7,11 @@ export async function POST(
 ) {
   try {
     const { token } = await params
-    const { acompanhantes, ausente } = await request.json()
+    const { acompanhantes, ausente, nome } = await request.json()
     
     console.log('Confirmando para token:', token)
     console.log('Ausente:', ausente)
-    console.log('Acompanhantes:', acompanhantes)
+    console.log('Nome atualizado:', nome)
     
     // Verificar se o convidado existe
     const convidadoExistente = await prisma.convidado.findUnique({
@@ -39,10 +39,16 @@ export async function POST(
       })
     }
     
-    // Atualizar convidado como confirmado
+    // Atualizar nome se foi modificado
+    let dadosAtualizacao: any = { confirmado: true }
+    if (nome && nome !== convidadoExistente.nome) {
+      dadosAtualizacao.nome = nome.trim()
+    }
+    
+    // Atualizar convidado
     const convidado = await prisma.convidado.update({
       where: { token: token },
-      data: { confirmado: true }
+      data: dadosAtualizacao
     })
     
     // Adicionar acompanhantes

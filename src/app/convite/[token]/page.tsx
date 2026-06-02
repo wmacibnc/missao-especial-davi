@@ -9,6 +9,7 @@ export default function ConvitePage() {
   const token = params.token as string
   
   const [convidado, setConvidado] = useState<any>(null)
+  const [nomeAtualizado, setNomeAtualizado] = useState('')
   const [acompanhantes, setAcompanhantes] = useState<Array<{nome: string, documento: string}>>([])
   const [loading, setLoading] = useState(true)
   const [confirmado, setConfirmado] = useState(false)
@@ -16,6 +17,7 @@ export default function ConvitePage() {
   const [qrCodeGerado, setQrCodeGerado] = useState(false)
   const [submeter, setSubmeter] = useState(false)
   const [mostrarJustificativa, setMostrarJustificativa] = useState(false)
+  const [mostrarModalNome, setMostrarModalNome] = useState(false)
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 })
   const [musicaTocando, setMusicaTocando] = useState(false)
   const [showIntro, setShowIntro] = useState(true)
@@ -120,6 +122,7 @@ export default function ConvitePage() {
       const res = await fetch(`/api/convite/${token}`)
       const data = await res.json()
       setConvidado(data)
+      setNomeAtualizado(data.nome)
       setConfirmado(data.confirmado)
       setAusente(data.ausente || false)
       if (data.limiteConvites > 0 && !data.confirmado && !data.ausente) {
@@ -139,6 +142,43 @@ export default function ConvitePage() {
     setAcompanhantes(novos)
   }
 
+  const handleConfirmarClick = () => {
+    if (nomeAtualizado !== convidado?.nome) {
+      setMostrarModalNome(true)
+    } else {
+      document.getElementById('formulario')?.scrollIntoView({ behavior: 'smooth' })
+    }
+  }
+
+  const confirmarNome = async () => {
+    if (!nomeAtualizado.trim()) {
+      alert('Por favor, informe seu nome completo para a entrada na portaria.')
+      return
+    }
+    
+    setSubmeter(true)
+    try {
+      const res = await fetch(`/api/convite/${token}/atualizar-nome`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nome: nomeAtualizado })
+      })
+      
+      if (res.ok) {
+        setConvidado({ ...convidado, nome: nomeAtualizado })
+        setMostrarModalNome(false)
+        document.getElementById('formulario')?.scrollIntoView({ behavior: 'smooth' })
+      } else {
+        alert('Erro ao atualizar nome. Tente novamente.')
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar nome:', error)
+      alert('Erro ao conectar com o servidor')
+    } finally {
+      setSubmeter(false)
+    }
+  }
+
   const handleConfirmar = async (e: React.FormEvent) => {
     e.preventDefault()
     setSubmeter(true)
@@ -149,7 +189,11 @@ export default function ConvitePage() {
       const res = await fetch(`/api/convite/${token}/confirmar`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ acompanhantes: acompanhantesFiltrados, ausente: false })
+        body: JSON.stringify({ 
+          acompanhantes: acompanhantesFiltrados, 
+          ausente: false,
+          nome: nomeAtualizado 
+        })
       })
       
       if (res.ok) {
@@ -280,7 +324,7 @@ export default function ConvitePage() {
             <p style={{ color: 'white', marginBottom: '32px' }}>
               {convidado.nome}, sua presença foi confirmada com sucesso!
             </p>
-            
+                        
             <Link href="/">
               <button style={{
                 background: 'linear-gradient(135deg, #D7B65D, #FFD700)',
@@ -466,6 +510,95 @@ export default function ConvitePage() {
         </div>
       )}
 
+      {/* Modal para atualizar nome */}
+      {mostrarModalNome && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.95)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 200,
+          padding: '20px'
+        }}>
+          <div style={{
+            background: '#0B1F3D',
+            padding: '32px',
+            borderRadius: '16px',
+            maxWidth: '450px',
+            width: '100%',
+            textAlign: 'center',
+            border: '1px solid #D7B65D'
+          }}>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}>📝</div>
+            <h2 style={{ color: '#D7B65D', marginBottom: '16px' }}>Confirme seu nome completo</h2>
+            <p style={{ color: '#9ca3af', marginBottom: '8px', fontSize: '14px' }}>
+              ⚠️ <strong>ATENÇÃO:</strong> Para garantir sua entrada na portaria do condomínio,<br />
+              precisamos do seu <strong>nome completo</strong> como está no documento.
+            </p>
+            <p style={{ color: '#facc15', marginBottom: '24px', fontSize: '13px' }}>
+              Isso é obrigatório para liberação na portaria!
+            </p>
+            
+            <input
+              type="text"
+              placeholder="Nome completo (ex: Gilca Franco da Silva)"
+              value={nomeAtualizado}
+              onChange={(e) => setNomeAtualizado(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '14px',
+                marginBottom: '16px',
+                background: '#06142A',
+                color: 'white',
+                border: '1px solid #D7B65D',
+                borderRadius: '8px',
+                fontSize: '16px'
+              }}
+              autoFocus
+            />
+            
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button
+                onClick={() => setMostrarModalNome(false)}
+                style={{
+                  flex: 1,
+                  background: 'rgba(156,163,175,0.2)',
+                  color: '#9ca3af',
+                  padding: '12px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  cursor: 'pointer'
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmarNome}
+                disabled={submeter}
+                style={{
+                  flex: 1,
+                  background: 'linear-gradient(135deg, #D7B65D, #FFD700)',
+                  color: '#06142A',
+                  padding: '12px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  opacity: submeter ? 0.7 : 1
+                }}
+              >
+                {submeter ? 'Salvando...' : 'Salvar e continuar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div style={{ padding: '48px 16px' }}>
         <div style={{ maxWidth: '1000px', margin: '0 auto', textAlign: 'center' }}>
           {/* Título */}
@@ -485,14 +618,14 @@ export default function ConvitePage() {
 
           {/* Frases */}
           <div style={{ margin: '32px 0', padding: '20px', background: 'rgba(215,182,93,0.1)', borderRadius: '16px' }}>
-            <p style={{ color: '#D7B65D', fontSize: '20px', marginBottom: '12px' }}>✨ Olá, {convidado.nome}! ✨</p>
+            <p style={{ color: '#D7B65D', fontSize: '20px', marginBottom: '12px' }}>✨ Olá! ✨</p>
             <p style={{ color: 'white', fontSize: '18px', marginBottom: '8px' }}>Você está convidado(a) para a grande aventura espacial do Davi!</p>
           </div>
 
           {/* Botões de ação */}
           <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '32px' }}>
             <button
-              onClick={() => document.getElementById('formulario')?.scrollIntoView({ behavior: 'smooth' })}
+              onClick={handleConfirmarClick}
               style={{
                 background: 'linear-gradient(135deg, #D7B65D, #FFD700)',
                 color: '#06142A',
@@ -569,9 +702,33 @@ export default function ConvitePage() {
             <form onSubmit={handleConfirmar}>
               <h2 style={{ color: '#D7B65D', marginBottom: '24px', fontSize: '24px' }}>Confirme sua presença</h2>
               
+              {/* Nome do convidado principal - somente leitura após salvo */}
+              <div style={{ marginBottom: '24px', padding: '16px', background: 'rgba(0,0,0,0.3)', borderRadius: '8px' }}>
+                <label style={{ color: '#D7B65D', fontSize: '14px', marginBottom: '8px', display: 'block' }}>
+                  📝 Seu nome completo (para portaria)
+                </label>
+                <input
+                  type="text"
+                  value={nomeAtualizado}
+                  onChange={(e) => setNomeAtualizado(e.target.value)}
+                  placeholder="Digite seu nome completo"
+                  style={{
+                    width: '100%',
+                    padding: '14px',
+                    background: '#06142A',
+                    color: 'white',
+                    border: '1px solid #D7B65D',
+                    borderRadius: '8px',
+                    fontSize: '16px'
+                  }}
+                />
+                <p style={{ color: '#9ca3af', fontSize: '11px', marginTop: '6px' }}>
+                  ⚠️ Nome completo obrigatório para liberação na portaria do condomínio
+                </p>
+              </div>
+              
               {convidado.limiteConvites === 0 ? (
                 <div style={{ background: 'rgba(74,222,128,0.1)', padding: '16px', borderRadius: '8px', marginBottom: '24px', textAlign: 'center' }}>
-                  <p style={{ color: '#4ade80', fontSize: '18px' }}></p>
                 </div>
               ) : (
                 <>
@@ -579,7 +736,7 @@ export default function ConvitePage() {
                     Você pode levar até <strong>{convidado.limiteConvites}</strong> acompanhante(s)
                   </p>
                   <p style={{ color: '#D7B65D', marginBottom: '24px', fontSize: '13px' }}>
-                    💡 Preencha apenas os nomes dos acompanhantes que irão com você. Deixe em branco os que não forem.
+                    💡 Preencha apenas os nomes dos acompanhantes que irão com você.
                   </p>
 
                   {acompanhantes.map((acomp, index) => (
@@ -607,6 +764,9 @@ export default function ConvitePage() {
                           fontSize: '16px'
                         }}
                       />
+                      <p style={{ color: '#9ca3af', fontSize: '11px', marginTop: '4px' }}>
+                        Nome completo para controle de acesso
+                      </p>
                     </div>
                   ))}
                 </>
