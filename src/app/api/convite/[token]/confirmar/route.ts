@@ -24,11 +24,13 @@ export async function POST(
     }
     
     if (ausente) {
+      // Registrar ausência
       await prisma.convidado.update({
         where: { token: token },
         data: { ausente: true }
       })
       
+      // Enviar email de ausência
       await enviarEmailNotificacao('ausencia', {
         nome: convidadoExistente.nome,
         telefone: convidadoExistente.telefone
@@ -66,7 +68,7 @@ export async function POST(
       acompanhantesSalvos.push(novoAcomp)
     }
     
-    // Enviar notificação com lista de acompanhantes
+    // Enviar email de confirmação com lista de acompanhantes
     await enviarEmailNotificacao('confirmacao', {
       nome: convidado.nome,
       telefone: convidado.telefone,

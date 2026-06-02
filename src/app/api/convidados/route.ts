@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { jwtVerify } from 'jose'
 import { prisma } from '@/lib/prisma'
-import { enviarEmailNotificacao } from '@/lib/email'
 
 async function verifyAuth() {
   const cookieStore = await cookies()
@@ -39,7 +38,6 @@ export async function POST(request: Request) {
 
   const { nome, telefone, limiteConvites } = await request.json()
   const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
-  const link = `${process.env.NEXT_PUBLIC_BASE_URL}/convite/${token}`
   
   const convidado = await prisma.convidado.create({
     data: { 
@@ -50,18 +48,6 @@ export async function POST(request: Request) {
     },
     include: { acompanhantes: true }
   })
-  
-  // Enviar notificação por email
-  try {
-    await enviarEmailNotificacao('novo_convidado', {
-      nome,
-      telefone,
-      limiteConvites: limiteConvites || 0,
-      link
-    })
-  } catch (error) {
-    console.error('Erro ao enviar notificação:', error)
-  }
   
   return NextResponse.json(convidado)
 }
