@@ -225,17 +225,6 @@ export default function ConvitePage() {
               {convidado.nome}, sua presença foi confirmada com sucesso!
             </p>
             
-            {qrCodeGerado && (
-              <div style={{ marginBottom: '32px' }}>
-                <div style={{ background: 'white', padding: '20px', borderRadius: '8px', display: 'inline-block' }}>
-                  <QRCode value={qrCodeValue} size={200} />
-                </div>
-                <p style={{ color: '#9ca3af', fontSize: '12px', marginTop: '12px' }}>
-                  Guarde este QR Code para o check-in no evento!
-                </p>
-              </div>
-            )}
-            
             <Link href="/">
               <button style={{
                 background: 'linear-gradient(135deg, #D7B65D, #FFD700)',
