@@ -7,10 +7,11 @@ export async function POST(
 ) {
   try {
     const { token } = await params
-    const { acompanhantes } = await request.json()
+    const { acompanhantes, ausente } = await request.json()
     
     console.log('Confirmando para token:', token)
-    console.log('Acompanhantes recebidos:', JSON.stringify(acompanhantes, null, 2))
+    console.log('Ausente:', ausente)
+    console.log('Acompanhantes:', acompanhantes)
     
     // Verificar se o convidado existe
     const convidadoExistente = await prisma.convidado.findUnique({
@@ -21,20 +22,31 @@ export async function POST(
       return NextResponse.json({ error: 'Convite não encontrado' }, { status: 404 })
     }
     
-    if (convidadoExistente.confirmado) {
-      return NextResponse.json({ error: 'Presença já confirmada' }, { status: 400 })
+    if (convidadoExistente.confirmado || convidadoExistente.ausente) {
+      return NextResponse.json({ error: 'Resposta já enviada' }, { status: 400 })
     }
     
-    // Atualizar convidado
+    if (ausente) {
+      // Marcar como ausente
+      await prisma.convidado.update({
+        where: { token: token },
+        data: { ausente: true }
+      })
+      
+      return NextResponse.json({ 
+        success: true, 
+        message: 'Ausência registrada com sucesso'
+      })
+    }
+    
+    // Atualizar convidado como confirmado
     const convidado = await prisma.convidado.update({
       where: { token: token },
       data: { confirmado: true }
     })
     
-    // Adicionar acompanhantes (apenas os que têm nome preenchido)
+    // Adicionar acompanhantes
     const acompanhantesFiltrados = acompanhantes.filter(a => a.nome && a.nome.trim() !== '')
-    
-    console.log('Acompanhantes a salvar:', JSON.stringify(acompanhantesFiltrados, null, 2))
     
     if (acompanhantesFiltrados.length > convidadoExistente.limiteConvites) {
       return NextResponse.json({ error: 'Número de acompanhantes excede o limite' }, { status: 400 })
@@ -49,14 +61,6 @@ export async function POST(
         }
       })
     }
-    
-    // Buscar convidado atualizado com acompanhantes
-    const convidadoAtualizado = await prisma.convidado.findUnique({
-      where: { token: token },
-      include: { acompanhantes: true }
-    })
-    
-    console.log('Total de acompanhantes salvos:', convidadoAtualizado?.acompanhantes.length)
     
     return NextResponse.json({ 
       success: true, 

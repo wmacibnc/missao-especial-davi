@@ -12,8 +12,10 @@ export default function ConvitePage() {
   const [acompanhantes, setAcompanhantes] = useState<Array<{nome: string, documento: string}>>([])
   const [loading, setLoading] = useState(true)
   const [confirmado, setConfirmado] = useState(false)
+  const [ausente, setAusente] = useState(false)
   const [qrCodeGerado, setQrCodeGerado] = useState(false)
   const [submeter, setSubmeter] = useState(false)
+  const [mostrarJustificativa, setMostrarJustificativa] = useState(false)
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 })
   const [musicaTocando, setMusicaTocando] = useState(false)
   const [showIntro, setShowIntro] = useState(true)
@@ -34,7 +36,7 @@ export default function ConvitePage() {
     }
   }, [countdownValue])
 
-  // Inicializar áudio (sem tocar automaticamente)
+  // Inicializar áudio
   useEffect(() => {
     const audioElement = new Audio('/musica/also-sprach-zarathustra.mp3')
     audioElement.loop = true
@@ -50,7 +52,6 @@ export default function ConvitePage() {
     }
   }, [])
 
-  // Tentar tocar música quando o usuário interagir com a página
   const iniciarMusica = () => {
     if (audioRef.current && !musicaTocando) {
       audioRef.current.play()
@@ -72,7 +73,6 @@ export default function ConvitePage() {
     }
   }
 
-  // Detectar primeiro toque/clique na página
   useEffect(() => {
     const handleFirstInteraction = () => {
       if (introPassou.current && audioRef.current && !musicaTocando) {
@@ -80,7 +80,6 @@ export default function ConvitePage() {
           .then(() => setMusicaTocando(true))
           .catch(e => console.log('Auto-play ainda bloqueado:', e))
       }
-      // Remover listeners após a primeira interação
       document.removeEventListener('click', handleFirstInteraction)
       document.removeEventListener('touchstart', handleFirstInteraction)
     }
@@ -122,7 +121,8 @@ export default function ConvitePage() {
       const data = await res.json()
       setConvidado(data)
       setConfirmado(data.confirmado)
-      if (data.limiteConvites > 0 && !data.confirmado) {
+      setAusente(data.ausente || false)
+      if (data.limiteConvites > 0 && !data.confirmado && !data.ausente) {
         const camposVazios = Array(data.limiteConvites).fill({ nome: '', documento: '' })
         setAcompanhantes(camposVazios)
       }
@@ -139,7 +139,7 @@ export default function ConvitePage() {
     setAcompanhantes(novos)
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleConfirmar = async (e: React.FormEvent) => {
     e.preventDefault()
     setSubmeter(true)
     
@@ -149,7 +149,7 @@ export default function ConvitePage() {
       const res = await fetch(`/api/convite/${token}/confirmar`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ acompanhantes: acompanhantesFiltrados })
+        body: JSON.stringify({ acompanhantes: acompanhantesFiltrados, ausente: false })
       })
       
       if (res.ok) {
@@ -161,6 +161,34 @@ export default function ConvitePage() {
       }
     } catch (error) {
       console.error('Erro ao confirmar:', error)
+      alert('Erro ao conectar com o servidor')
+    } finally {
+      setSubmeter(false)
+    }
+  }
+
+  const handleAusente = async () => {
+    setMostrarJustificativa(true)
+  }
+
+  const confirmarAusente = async () => {
+    setSubmeter(true)
+    try {
+      const res = await fetch(`/api/convite/${token}/confirmar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ acompanhantes: [], ausente: true })
+      })
+      
+      if (res.ok) {
+        setAusente(true)
+        setMostrarJustificativa(false)
+      } else {
+        const error = await res.json()
+        alert(error.error || 'Erro ao registrar ausência')
+      }
+    } catch (error) {
+      console.error('Erro ao registrar ausência:', error)
       alert('Erro ao conectar com o servidor')
     } finally {
       setSubmeter(false)
@@ -252,7 +280,51 @@ export default function ConvitePage() {
             <p style={{ color: 'white', marginBottom: '32px' }}>
               {convidado.nome}, sua presença foi confirmada com sucesso!
             </p>
+            
+            <Link href="/">
+              <button style={{
+                background: 'linear-gradient(135deg, #D7B65D, #FFD700)',
+                color: '#06142A',
+                padding: '12px 24px',
+                borderRadius: '8px',
+                border: 'none',
+                fontWeight: 'bold',
+                cursor: 'pointer'
+              }}>
+                Voltar para o site
+              </button>
+            </Link>
+          </div>
+        </div>
 
+        <style jsx>{`
+          @keyframes twinkle { 0%,100% { opacity: 0.2; } 50% { opacity: 1; } }
+        `}</style>
+      </div>
+    )
+  }
+
+  if (ausente) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#06142A', padding: '20px' }}>
+        <div style={{ position: 'fixed', inset: 0, zIndex: -10 }}>
+          {stars.map((star) => (
+            <div key={star.id} style={{ position: 'absolute', background: 'white', borderRadius: '50%', left: `${star.left}%`, top: `${star.top}%`, width: star.size, height: star.size, opacity: 0.3, animation: `twinkle ${3 + star.delay}s infinite` }} />
+          ))}
+        </div>
+
+        <div style={{ maxWidth: '600px', margin: '0 auto', textAlign: 'center' }}>
+          <div style={{
+            background: '#0B1F3D',
+            padding: '40px',
+            borderRadius: '8px',
+            border: '2px solid #f87171'
+          }}>
+            <div style={{ fontSize: '64px', marginBottom: '20px' }}>💔</div>
+            <h1 style={{ color: '#f87171', fontSize: '28px', marginBottom: '16px' }}>
+              Que pena!
+            </h1>
+            
             <Link href="/">
               <button style={{
                 background: 'linear-gradient(135deg, #D7B65D, #FFD700)',
@@ -313,7 +385,6 @@ export default function ConvitePage() {
         {musicaTocando ? '🔊' : '🔇'}
       </button>
 
-      {/* Aviso para tocar música */}
       {!musicaTocando && (
         <div style={{
           position: 'fixed',
@@ -327,6 +398,71 @@ export default function ConvitePage() {
           zIndex: 100
         }}>
           Toque aqui 🔈
+        </div>
+      )}
+
+      {/* Modal de confirmação de ausência */}
+      {mostrarJustificativa && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.9)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 200,
+          padding: '20px'
+        }}>
+          <div style={{
+            background: '#0B1F3D',
+            padding: '32px',
+            borderRadius: '16px',
+            maxWidth: '400px',
+            width: '100%',
+            textAlign: 'center',
+            border: '1px solid #f87171'
+          }}>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}>💔</div>
+            <h2 style={{ color: '#D7B65D', marginBottom: '16px' }}>Tem certeza?</h2>
+            <p style={{ color: 'white', marginBottom: '24px' }}>
+              Você está prestes a marcar que não poderá comparecer.
+            </p>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button
+                onClick={() => setMostrarJustificativa(false)}
+                style={{
+                  flex: 1,
+                  background: 'rgba(156,163,175,0.2)',
+                  color: '#9ca3af',
+                  padding: '12px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  cursor: 'pointer'
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmarAusente}
+                disabled={submeter}
+                style={{
+                  flex: 1,
+                  background: '#f87171',
+                  color: 'white',
+                  padding: '12px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  opacity: submeter ? 0.7 : 1
+                }}
+              >
+                {submeter ? 'Confirmando...' : 'Sim, não poderei ir'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -351,13 +487,46 @@ export default function ConvitePage() {
           <div style={{ margin: '32px 0', padding: '20px', background: 'rgba(215,182,93,0.1)', borderRadius: '16px' }}>
             <p style={{ color: '#D7B65D', fontSize: '20px', marginBottom: '12px' }}>✨ Olá, {convidado.nome}! ✨</p>
             <p style={{ color: 'white', fontSize: '18px', marginBottom: '8px' }}>Você está convidado(a) para a grande aventura espacial do Davi!</p>
-            <p style={{ color: '#D7B65D', fontSize: '24px', fontWeight: 'bold' }}>🚀 Confirme sua presença abaixo 🚀</p>
+          </div>
+
+          {/* Botões de ação */}
+          <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '32px' }}>
+            <button
+              onClick={() => document.getElementById('formulario')?.scrollIntoView({ behavior: 'smooth' })}
+              style={{
+                background: 'linear-gradient(135deg, #D7B65D, #FFD700)',
+                color: '#06142A',
+                padding: '14px 28px',
+                borderRadius: '12px',
+                border: 'none',
+                fontWeight: 'bold',
+                fontSize: '16px',
+                cursor: 'pointer'
+              }}
+            >
+              🚀 CONFIRMAR PRESENÇA
+            </button>
+            <button
+              onClick={handleAusente}
+              style={{
+                background: 'rgba(239,68,68,0.15)',
+                color: '#f87171',
+                padding: '14px 28px',
+                borderRadius: '12px',
+                border: '1px solid #f87171',
+                fontWeight: 'bold',
+                fontSize: '16px',
+                cursor: 'pointer'
+              }}
+            >
+              ❌ Infelizmente não vou conseguir ir
+            </button>
           </div>
 
           {/* Aviso de prazo */}
           <div style={{ background: 'rgba(215,182,93,0.15)', padding: '12px', borderRadius: '8px', marginBottom: '24px', textAlign: 'center', border: '1px solid rgba(215,182,93,0.3)' }}>
             <p style={{ color: '#facc15', fontSize: '14px', fontWeight: 'bold' }}>
-              ⚠️ *Confirme sua presença até o dia 25/05/2026*
+              ⚠️ Confirme sua presença até o dia 25/05/2026
             </p>
           </div>
 
@@ -390,14 +559,14 @@ export default function ConvitePage() {
             <a href="https://maps.app.goo.gl/Ab4gCngsNNd6ixraA" target="_blank" style={{ background: '#D7B65D', color: '#06142A', padding: '12px 24px', borderRadius: '8px', textDecoration: 'none', fontWeight: 'bold', display: 'inline-block' }}>Abrir no Google Maps →</a>
           </div>
 
-          {/* Formulário de confirmação */}
-          <div style={{
+          {/* Formulário de confirmação de presença */}
+          <div id="formulario" style={{
             background: 'rgba(11,31,61,0.95)',
             borderRadius: '16px',
             padding: '32px',
             border: '1px solid rgba(215,182,93,0.3)'
           }}>
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleConfirmar}>
               <h2 style={{ color: '#D7B65D', marginBottom: '24px', fontSize: '24px' }}>Confirme sua presença</h2>
               
               {convidado.limiteConvites === 0 ? (

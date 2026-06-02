@@ -29,13 +29,12 @@ export default function ConvidadosPage() {
     }
   }
 
-  const toggleConfirmacao = async (id: string, confirmado: boolean) => {
-    const acao = confirmado ? 'desconfirmar' : 'confirmar'
-    if (confirm(`Tem certeza que deseja ${acao} este convidado?`)) {
+  const resetarStatus = async (id: string, nome: string) => {
+    if (confirm(`⚠️ Resetar status do convidado "${nome}" para pendente?`)) {
       await fetch('/api/convidados', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, confirmado: !confirmado })
+        body: JSON.stringify({ id, confirmado: false, ausente: false })
       })
       carregarConvidados()
     }
@@ -47,7 +46,6 @@ export default function ConvidadosPage() {
         method: 'DELETE'
       })
       if (res.ok) {
-        console.log(`✅ Convidado "${nome}" excluído com sucesso!`);
         carregarConvidados()
       } else {
         alert('❌ Erro ao excluir convidado')
@@ -55,23 +53,11 @@ export default function ConvidadosPage() {
     }
   }
 
-  const excluirConfirmacao = async (id: string, nome: string) => {
-    if (confirm(`⚠️ Tem certeza que deseja remover a CONFIRMAÇÃO do convidado "${nome}"?\n\nEle precisará confirmar novamente.`)) {
-      await fetch('/api/convidados', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, confirmado: false })
-      })
-      console.log(`✅ Confirmação removida para "${nome}"`)
-      carregarConvidados()
-    }
-  }
-
-  const enviarWhatsApp = (telefone: string, token: string) => {
+  const enviarWhatsApp = (nome: string, telefone: string, token: string) => {
     const link = `${window.location.origin}/convite/${token}`
     const mensagem = `🚀 *MISSAO ESPACIAL DAVI - 7 ANOS* 🚀
 
-✨ *VOCE ESTA CONVIDADO!* ✨
+✨ *${nome}, VOCE ESTA CONVIDADO!* ✨
 
 • Data: 11/07/2026
 • Horario: 17h
@@ -96,6 +82,12 @@ ${link}
   }
 
   const stars = Array.from({ length: 100 }, (_, i) => ({ id: i, left: Math.random() * 100, top: Math.random() * 100, size: Math.random() * 2 + 1, delay: Math.random() * 3 }))
+
+  const getStatus = (conv: any) => {
+    if (conv.ausente) return { text: '😢 Ausente', color: '#f87171', bg: 'rgba(248,113,113,0.2)' }
+    if (conv.confirmado) return { text: '✅ Confirmado', color: '#4ade80', bg: 'rgba(74,222,128,0.2)' }
+    return { text: '⏳ Pendente', color: '#facc15', bg: 'rgba(250,204,21,0.2)' }
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: '#06142A' }}>
@@ -124,34 +116,31 @@ ${link}
                 </tr>
               </thead>
               <tbody>
-                {convidados.map((conv: any) => (
-                  <tr key={conv.id} style={{ borderBottom: '1px solid rgba(215, 182, 93, 0.2)' }}>
-                    <td style={{ padding: '12px', color: 'white' }}>{conv.nome}</td>
-                    <td style={{ padding: '12px', color: 'white' }}>{conv.telefone}</td>
-                    <td style={{ padding: '12px', textAlign: 'center', color: 'white' }}>{conv.limiteConvites === 0 ? '🚫' : conv.limiteConvites}</td>
-                    <td style={{ padding: '12px', textAlign: 'center' }}>
-                      <span style={{
-                        background: conv.confirmado ? 'rgba(74,222,128,0.2)' : 'rgba(250,204,21,0.2)',
-                        color: conv.confirmado ? '#4ade80' : '#facc15',
-                        padding: '4px 12px',
-                        borderRadius: '20px',
-                        fontSize: '12px'
-                      }}>
-                        {conv.confirmado ? '✅ Confirmado' : '⏳ Pendente'}
-                      </span>
-                    </td>
-                    <td style={{ padding: '12px', textAlign: 'center' }}>
-                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
-                        <button onClick={() => enviarWhatsApp(conv.telefone, conv.token)} style={{ background: '#25D366', color: 'white', padding: '6px 12px', borderRadius: '4px', border: 'none', cursor: 'pointer', fontSize: '12px' }} title="Enviar WhatsApp">📱</button>
-                        <button onClick={() => copiarLink(conv.token)} style={{ background: '#3b82f6', color: 'white', padding: '6px 12px', borderRadius: '4px', border: 'none', cursor: 'pointer', fontSize: '12px' }} title="Copiar Link">🔗</button>
-                        {conv.confirmado && (
-                          <button onClick={() => excluirConfirmacao(conv.id, conv.nome)} style={{ background: '#facc15', color: '#06142A', padding: '6px 12px', borderRadius: '4px', border: 'none', cursor: 'pointer', fontSize: '12px' }} title="Remover Confirmação">❌</button>
-                        )}
-                        <button onClick={() => excluirConvidado(conv.id, conv.nome)} style={{ background: '#ef4444', color: 'white', padding: '6px 12px', borderRadius: '4px', border: 'none', cursor: 'pointer', fontSize: '12px' }} title="Excluir Convidado">🗑️</button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {convidados.map((conv: any) => {
+                  const status = getStatus(conv)
+                  return (
+                    <tr key={conv.id} style={{ borderBottom: '1px solid rgba(215, 182, 93, 0.2)' }}>
+                      <td style={{ padding: '12px', color: 'white' }}>{conv.nome}</td>
+                      <td style={{ padding: '12px', color: 'white' }}>{conv.telefone}</td>
+                      <td style={{ padding: '12px', textAlign: 'center', color: 'white' }}>{conv.limiteConvites === 0 ? '🚫' : conv.limiteConvites}</td>
+                      <td style={{ padding: '12px', textAlign: 'center' }}>
+                        <span style={{ background: status.bg, color: status.color, padding: '4px 12px', borderRadius: '20px', fontSize: '12px' }}>
+                          {status.text}
+                        </span>
+                      </td>
+                      <td style={{ padding: '12px', textAlign: 'center' }}>
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                          <button onClick={() => enviarWhatsApp(conv.nome, conv.telefone, conv.token)} style={{ background: '#25D366', color: 'white', padding: '6px 12px', borderRadius: '4px', border: 'none', cursor: 'pointer', fontSize: '12px' }} title="Enviar WhatsApp">📱</button>
+                          <button onClick={() => copiarLink(conv.token)} style={{ background: '#3b82f6', color: 'white', padding: '6px 12px', borderRadius: '4px', border: 'none', cursor: 'pointer', fontSize: '12px' }} title="Copiar Link">🔗</button>
+                          {(conv.confirmado || conv.ausente) && (
+                            <button onClick={() => resetarStatus(conv.id, conv.nome)} style={{ background: '#facc15', color: '#06142A', padding: '6px 12px', borderRadius: '4px', border: 'none', cursor: 'pointer', fontSize: '12px' }} title="Resetar Status">🔄</button>
+                          )}
+                          <button onClick={() => excluirConvidado(conv.id, conv.nome)} style={{ background: '#ef4444', color: 'white', padding: '6px 12px', borderRadius: '4px', border: 'none', cursor: 'pointer', fontSize: '12px' }} title="Excluir Convidado">🗑️</button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
@@ -175,13 +164,8 @@ ${link}
         )}
       </div>
       <style jsx>{`
-        @keyframes twinkle {
-          0%, 100% { opacity: 0.2; }
-          50% { opacity: 1; }
-        }
-        .animate-twinkle {
-          animation: twinkle 3s ease-in-out infinite;
-        }
+        @keyframes twinkle { 0%,100% { opacity: 0.2; } 50% { opacity: 1; } }
+        .animate-twinkle { animation: twinkle 3s ease-in-out infinite; }
       `}</style>
     </div>
   )

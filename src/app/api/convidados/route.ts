@@ -23,9 +23,7 @@ export async function GET() {
   }
 
   const convidados = await prisma.convidado.findMany({
-    include: { 
-      acompanhantes: true  // Incluir acompanhantes
-    },
+    include: { acompanhantes: true },
     orderBy: { createdAt: 'desc' }
   })
   
@@ -60,11 +58,14 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
   }
 
-  const { id, confirmado } = await request.json()
+  const { id, confirmado, ausente } = await request.json()
   
   const convidado = await prisma.convidado.update({
     where: { id },
-    data: { confirmado },
+    data: { 
+      confirmado: confirmado !== undefined ? confirmado : undefined,
+      ausente: ausente !== undefined ? ausente : false
+    },
     include: { acompanhantes: true }
   })
   

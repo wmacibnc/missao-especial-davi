@@ -21,7 +21,7 @@ export default function PresencasPage() {
       'Nome': conv.nome,
       'Telefone': conv.telefone,
       'Limite Acompanhantes': conv.limiteConvites,
-      'Confirmado': conv.confirmado ? 'Sim' : 'Não',
+      'Status': conv.ausente ? 'Ausente' : (conv.confirmado ? 'Confirmado' : 'Pendente'),
       'Check-in Realizado': conv.checkinRealizado ? 'Sim' : 'Não',
       'Acompanhantes': conv.acompanhantes?.map((a: any) => `${a.nome}`).join(', ') || 'Nenhum',
       'Data Cadastro': new Date(conv.createdAt).toLocaleDateString('pt-BR')
@@ -34,17 +34,26 @@ export default function PresencasPage() {
   }
 
   const convidadosFiltrados = convidados.filter((conv: any) => {
-    if (filtro === 'confirmados') return conv.confirmado
-    if (filtro === 'pendentes') return !conv.confirmado
+    if (filtro === 'confirmados') return conv.confirmado && !conv.ausente
+    if (filtro === 'pendentes') return !conv.confirmado && !conv.ausente
+    if (filtro === 'ausentes') return conv.ausente
     if (filtro === 'checkin') return conv.checkinRealizado
     return true
   })
 
-  const totalConfirmados = convidados.filter((c: any) => c.confirmado).length
+  const totalConfirmados = convidados.filter((c: any) => c.confirmado && !c.ausente).length
+  const totalAusentes = convidados.filter((c: any) => c.ausente).length
+  const totalPendentes = convidados.filter((c: any) => !c.confirmado && !c.ausente).length
   const totalCheckin = convidados.filter((c: any) => c.checkinRealizado).length
   const totalAcompanhantes = convidados.reduce((acc: number, c: any) => acc + (c.acompanhantes?.length || 0), 0)
 
   const stars = Array.from({ length: 100 }, (_, i) => ({ id: i, left: Math.random() * 100, top: Math.random() * 100, size: Math.random() * 2 + 1, delay: Math.random() * 3 }))
+
+  const getStatusDisplay = (conv: any) => {
+    if (conv.ausente) return { icon: '😢', color: '#f87171', text: 'Ausente' }
+    if (conv.confirmado) return { icon: '✅', color: '#4ade80', text: 'Confirmado' }
+    return { icon: '⏳', color: '#facc15', text: 'Pendente' }
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: '#06142A' }}>
@@ -59,7 +68,7 @@ export default function PresencasPage() {
           <button onClick={exportarExcel} style={{ background: '#25D366', color: 'white', padding: '10px 20px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>📊 Exportar Excel</button>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '32px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '32px' }}>
           <div style={{ background: '#112D59', padding: '16px', borderRadius: '8px' }}>
             <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#D7B65D' }}>{convidados.length}</div>
             <div style={{ color: 'white', fontSize: '14px' }}>Total Convidados</div>
@@ -70,19 +79,28 @@ export default function PresencasPage() {
           </div>
           <div style={{ background: '#112D59', padding: '16px', borderRadius: '8px' }}>
             <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#60a5fa' }}>{totalCheckin}</div>
-            <div style={{ color: 'white', fontSize: '14px' }}>Check-in Realizado</div>
+            <div style={{ color: 'white', fontSize: '14px' }}>Check-in</div>
+          </div>
+          <div style={{ background: '#112D59', padding: '16px', borderRadius: '8px' }}>
+            <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#f87171' }}>{totalAusentes}</div>
+            <div style={{ color: 'white', fontSize: '14px' }}>Ausentes</div>
+          </div>
+          <div style={{ background: '#112D59', padding: '16px', borderRadius: '8px' }}>
+            <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#facc15' }}>{totalPendentes}</div>
+            <div style={{ color: 'white', fontSize: '14px' }}>Pendentes</div>
           </div>
           <div style={{ background: '#112D59', padding: '16px', borderRadius: '8px' }}>
             <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#facc15' }}>{totalAcompanhantes}</div>
-            <div style={{ color: 'white', fontSize: '14px' }}>Total Acompanhantes</div>
+            <div style={{ color: 'white', fontSize: '14px' }}>Acompanhantes</div>
           </div>
         </div>
 
         <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', flexWrap: 'wrap' }}>
           <button onClick={() => setFiltro('todos')} style={{ padding: '8px 16px', background: filtro === 'todos' ? '#D7B65D' : '#0B1F3D', color: filtro === 'todos' ? '#06142A' : '#D7B65D', border: '1px solid #D7B65D', borderRadius: '8px', cursor: 'pointer' }}>Todos</button>
           <button onClick={() => setFiltro('confirmados')} style={{ padding: '8px 16px', background: filtro === 'confirmados' ? '#D7B65D' : '#0B1F3D', color: filtro === 'confirmados' ? '#06142A' : '#D7B65D', border: '1px solid #D7B65D', borderRadius: '8px', cursor: 'pointer' }}>Confirmados</button>
+          <button onClick={() => setFiltro('ausentes')} style={{ padding: '8px 16px', background: filtro === 'ausentes' ? '#D7B65D' : '#0B1F3D', color: filtro === 'ausentes' ? '#06142A' : '#D7B65D', border: '1px solid #D7B65D', borderRadius: '8px', cursor: 'pointer' }}>Ausentes</button>
           <button onClick={() => setFiltro('pendentes')} style={{ padding: '8px 16px', background: filtro === 'pendentes' ? '#D7B65D' : '#0B1F3D', color: filtro === 'pendentes' ? '#06142A' : '#D7B65D', border: '1px solid #D7B65D', borderRadius: '8px', cursor: 'pointer' }}>Pendentes</button>
-          <button onClick={() => setFiltro('checkin')} style={{ padding: '8px 16px', background: filtro === 'checkin' ? '#D7B65D' : '#0B1F3D', color: filtro === 'checkin' ? '#06142A' : '#D7B65D', border: '1px solid #D7B65D', borderRadius: '8px', cursor: 'pointer' }}>Check-in Realizado</button>
+          <button onClick={() => setFiltro('checkin')} style={{ padding: '8px 16px', background: filtro === 'checkin' ? '#D7B65D' : '#0B1F3D', color: filtro === 'checkin' ? '#06142A' : '#D7B65D', border: '1px solid #D7B65D', borderRadius: '8px', cursor: 'pointer' }}>Check-in</button>
         </div>
 
         {loading ? (
@@ -95,38 +113,41 @@ export default function PresencasPage() {
                   <th style={{ padding: '12px', textAlign: 'left', color: '#D7B65D' }}>Nome</th>
                   <th style={{ padding: '12px', textAlign: 'left', color: '#D7B65D' }}>Telefone</th>
                   <th style={{ padding: '12px', textAlign: 'center', color: '#D7B65D' }}>Acomp.</th>
-                  <th style={{ padding: '12px', textAlign: 'center', color: '#D7B65D' }}>Confirmado</th>
+                  <th style={{ padding: '12px', textAlign: 'center', color: '#D7B65D' }}>Status</th>
                   <th style={{ padding: '12px', textAlign: 'center', color: '#D7B65D' }}>Check-in</th>
                   <th style={{ padding: '12px', textAlign: 'left', color: '#D7B65D' }}>Acompanhantes</th>
-                 </tr>
+                </tr>
               </thead>
               <tbody>
-                {convidadosFiltrados.map((conv: any) => (
-                  <tr key={conv.id} style={{ borderBottom: '1px solid rgba(215, 182, 93, 0.2)' }}>
-                    <td style={{ padding: '12px', color: 'white' }}>{conv.nome}</td>
-                    <td style={{ padding: '12px', color: 'white' }}>{conv.telefone}</td>
-                    <td style={{ padding: '12px', textAlign: 'center', color: 'white' }}>{conv.limiteConvites}</td>
-                    <td style={{ padding: '12px', textAlign: 'center' }}>
-                      <span style={{ background: conv.confirmado ? 'rgba(74,222,128,0.2)' : 'rgba(250,204,21,0.2)', color: conv.confirmado ? '#4ade80' : '#facc15', padding: '4px 8px', borderRadius: '20px', fontSize: '12px' }}>
-                        {conv.confirmado ? '✅' : '⏳'}
-                      </span>
-                    </td>
-                    <td style={{ padding: '12px', textAlign: 'center' }}>
-                      <span style={{ background: conv.checkinRealizado ? 'rgba(74,222,128,0.2)' : 'rgba(156,163,175,0.2)', color: conv.checkinRealizado ? '#4ade80' : '#9ca3af', padding: '4px 8px', borderRadius: '20px', fontSize: '12px' }}>
-                        {conv.checkinRealizado ? '✅' : '⏳'}
-                      </span>
-                    </td>
-                    <td style={{ padding: '12px', color: 'white', fontSize: '12px' }}>
-                      {conv.acompanhantes && conv.acompanhantes.length > 0 
-                        ? conv.acompanhantes.map((a: any) => a.nome).join(', ')
-                        : conv.limiteConvites > 0 && conv.confirmado && conv.acompanhantes?.length === 0
-                          ? 'Nenhum acompanhante'
-                          : conv.limiteConvites === 0 
-                            ? '🚫 Sem acompanhantes'
-                            : 'Não confirmado'}
-                    </td>
-                  </tr>
-                ))}
+                {convidadosFiltrados.map((conv: any) => {
+                  const status = getStatusDisplay(conv)
+                  return (
+                    <tr key={conv.id} style={{ borderBottom: '1px solid rgba(215, 182, 93, 0.2)' }}>
+                      <td style={{ padding: '12px', color: 'white' }}>{conv.nome}</td>
+                      <td style={{ padding: '12px', color: 'white' }}>{conv.telefone}</td>
+                      <td style={{ padding: '12px', textAlign: 'center', color: 'white' }}>{conv.limiteConvites}</td>
+                      <td style={{ padding: '12px', textAlign: 'center' }}>
+                        <span style={{ background: `rgba(${status.color === '#4ade80' ? '74,222,128' : status.color === '#f87171' ? '248,113,113' : '250,204,21'},0.2)`, color: status.color, padding: '4px 8px', borderRadius: '20px', fontSize: '12px' }}>
+                          {status.icon} {status.text}
+                        </span>
+                       </td>
+                      <td style={{ padding: '12px', textAlign: 'center' }}>
+                        <span style={{ background: conv.checkinRealizado ? 'rgba(74,222,128,0.2)' : 'rgba(156,163,175,0.2)', color: conv.checkinRealizado ? '#4ade80' : '#9ca3af', padding: '4px 8px', borderRadius: '20px', fontSize: '12px' }}>
+                          {conv.checkinRealizado ? '✅' : '⏳'}
+                        </span>
+                       </td>
+                      <td style={{ padding: '12px', color: 'white', fontSize: '12px' }}>
+                        {conv.acompanhantes && conv.acompanhantes.length > 0 
+                          ? conv.acompanhantes.map((a: any) => a.nome).join(', ')
+                          : conv.limiteConvites > 0 && conv.confirmado && conv.acompanhantes?.length === 0
+                            ? 'Nenhum acompanhante'
+                            : conv.limiteConvites === 0 
+                              ? '🚫 Sem acompanhantes'
+                              : '-'}
+                       </td>
+                     </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
