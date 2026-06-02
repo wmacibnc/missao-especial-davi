@@ -403,7 +403,6 @@ export default function ConvitePage() {
               {convidado.limiteConvites === 0 ? (
                 <div style={{ background: 'rgba(74,222,128,0.1)', padding: '16px', borderRadius: '8px', marginBottom: '24px', textAlign: 'center' }}>
                   <p style={{ color: '#4ade80', fontSize: '18px' }}>✨ Este convite é apenas para você ✨</p>
-                  <p style={{ color: '#9ca3af', fontSize: '14px', marginTop: '8px' }}>Você virá sem acompanhantes</p>
                 </div>
               ) : (
                 <>
@@ -421,11 +420,11 @@ export default function ConvitePage() {
                       marginTop: index > 0 ? '20px' : '0'
                     }}>
                       <h3 style={{ color: '#D7B65D', fontSize: '16px', marginBottom: '12px' }}>
-                        Acompanhante {index + 1} {index === 0 && '(opcional)'}
+                        Acompanhante {index + 1}
                       </h3>
                       <input
                         type="text"
-                        placeholder="Nome completo (opcional)"
+                        placeholder="Nome completo"
                         value={acomp.nome}
                         onChange={(e) => atualizarAcompanhante(index, 'nome', e.target.value)}
                         style={{
