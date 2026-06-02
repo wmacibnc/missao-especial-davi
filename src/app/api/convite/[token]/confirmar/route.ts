@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { enviarEmailNotificacao } from '@/lib/email'
 
 export async function POST(
   request: Request,
@@ -8,10 +9,6 @@ export async function POST(
   try {
     const { token } = await params
     const { acompanhantes, ausente, nome } = await request.json()
-    
-    console.log('Confirmando para token:', token)
-    console.log('Ausente:', ausente)
-    console.log('Nome atualizado:', nome)
     
     // Verificar se o convidado existe
     const convidadoExistente = await prisma.convidado.findUnique({
@@ -27,10 +24,14 @@ export async function POST(
     }
     
     if (ausente) {
-      // Marcar como ausente
       await prisma.convidado.update({
         where: { token: token },
         data: { ausente: true }
+      })
+      
+      await enviarEmailNotificacao('ausencia', {
+        nome: convidadoExistente.nome,
+        telefone: convidadoExistente.telefone
       })
       
       return NextResponse.json({ 
@@ -45,7 +46,6 @@ export async function POST(
       dadosAtualizacao.nome = nome.trim()
     }
     
-    // Atualizar convidado
     const convidado = await prisma.convidado.update({
       where: { token: token },
       data: dadosAtualizacao
@@ -53,25 +53,31 @@ export async function POST(
     
     // Adicionar acompanhantes
     const acompanhantesFiltrados = acompanhantes.filter(a => a.nome && a.nome.trim() !== '')
-    
-    if (acompanhantesFiltrados.length > convidadoExistente.limiteConvites) {
-      return NextResponse.json({ error: 'Número de acompanhantes excede o limite' }, { status: 400 })
-    }
+    const acompanhantesSalvos = []
     
     for (const acomp of acompanhantesFiltrados) {
-      await prisma.acompanhante.create({
+      const novoAcomp = await prisma.acompanhante.create({
         data: {
           nome: acomp.nome.trim(),
           documento: acomp.documento?.trim() || '',
           convidadoId: convidado.id
         }
       })
+      acompanhantesSalvos.push(novoAcomp)
     }
+    
+    // Enviar notificação com lista de acompanhantes
+    await enviarEmailNotificacao('confirmacao', {
+      nome: convidado.nome,
+      telefone: convidado.telefone,
+      totalAcompanhantes: acompanhantesSalvos.length,
+      acompanhantes: acompanhantesSalvos
+    })
     
     return NextResponse.json({ 
       success: true, 
       message: 'Presença confirmada com sucesso!',
-      totalAcompanhantes: acompanhantesFiltrados.length
+      totalAcompanhantes: acompanhantesSalvos.length
     })
   } catch (error) {
     console.error('Erro ao confirmar presença:', error)
