@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useParams } from 'next/navigation'
 import QRCode from 'react-qr-code'
 import Link from 'next/link'
@@ -15,11 +15,11 @@ export default function ConvitePage() {
   const [qrCodeGerado, setQrCodeGerado] = useState(false)
   const [submeter, setSubmeter] = useState(false)
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 })
-  const [musicaTocando, setMusicaTocando] = useState(true)
-  const [audio, setAudio] = useState<HTMLAudioElement | null>(null)
+  const [musicaTocando, setMusicaTocando] = useState(false)
   const [showIntro, setShowIntro] = useState(true)
   const [countdownValue, setCountdownValue] = useState(3)
-  const [audioReady, setAudioReady] = useState(false)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const introPassou = useRef(false)
 
   // Animação de lançamento
   useEffect(() => {
@@ -27,48 +27,72 @@ export default function ConvitePage() {
       const timer = setTimeout(() => setCountdownValue(prev => prev - 1), 1000)
       return () => clearTimeout(timer)
     } else if (countdownValue === 0) {
-      setTimeout(() => setShowIntro(false), 500)
+      setTimeout(() => {
+        setShowIntro(false)
+        introPassou.current = true
+      }, 500)
     }
   }, [countdownValue])
 
-  // Música de fundo - igual à página inicial
+  // Inicializar áudio (sem tocar automaticamente)
   useEffect(() => {
     const audioElement = new Audio('/musica/also-sprach-zarathustra.mp3')
     audioElement.loop = true
     audioElement.volume = 0.3
     audioElement.preload = 'auto'
-    
-    // Quando estiver pronto, tocar
-    const handleCanPlay = () => {
-      audioElement.play().catch(e => console.log('Auto-play:', e))
-      setAudioReady(true)
-    }
-    
-    audioElement.addEventListener('canplaythrough', handleCanPlay)
-    
-    setAudio(audioElement)
-    setMusicaTocando(true)
+    audioRef.current = audioElement
 
     return () => {
-      audioElement.removeEventListener('canplaythrough', handleCanPlay)
-      if (audioElement) {
-        audioElement.pause()
-        audioElement.currentTime = 0
+      if (audioRef.current) {
+        audioRef.current.pause()
+        audioRef.current.currentTime = 0
       }
     }
   }, [])
 
+  // Tentar tocar música quando o usuário interagir com a página
+  const iniciarMusica = () => {
+    if (audioRef.current && !musicaTocando) {
+      audioRef.current.play()
+        .then(() => setMusicaTocando(true))
+        .catch(e => console.log('Erro ao tocar:', e))
+    }
+  }
+
   const toggleMusica = () => {
-    if (audio) {
+    if (audioRef.current) {
       if (musicaTocando) {
-        audio.pause()
+        audioRef.current.pause()
         setMusicaTocando(false)
       } else {
-        audio.play()
-        setMusicaTocando(true)
+        audioRef.current.play()
+          .then(() => setMusicaTocando(true))
+          .catch(e => console.log('Erro ao tocar:', e))
       }
     }
   }
+
+  // Detectar primeiro toque/clique na página
+  useEffect(() => {
+    const handleFirstInteraction = () => {
+      if (introPassou.current && audioRef.current && !musicaTocando) {
+        audioRef.current.play()
+          .then(() => setMusicaTocando(true))
+          .catch(e => console.log('Auto-play ainda bloqueado:', e))
+      }
+      // Remover listeners após a primeira interação
+      document.removeEventListener('click', handleFirstInteraction)
+      document.removeEventListener('touchstart', handleFirstInteraction)
+    }
+
+    document.addEventListener('click', handleFirstInteraction)
+    document.addEventListener('touchstart', handleFirstInteraction)
+
+    return () => {
+      document.removeEventListener('click', handleFirstInteraction)
+      document.removeEventListener('touchstart', handleFirstInteraction)
+    }
+  }, [musicaTocando])
 
   // Countdown do evento
   useEffect(() => {
@@ -154,7 +178,11 @@ export default function ConvitePage() {
   // Tela de intro
   if (showIntro) {
     return (
-      <div style={{ minHeight: '100vh', background: '#06142A', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+      <div 
+        style={{ minHeight: '100vh', background: '#06142A', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}
+        onClick={iniciarMusica}
+        onTouchStart={iniciarMusica}
+      >
         <div style={{ position: 'fixed', inset: 0 }}>
           {stars.map((star) => (
             <div key={star.id} style={{ position: 'absolute', background: 'white', borderRadius: '50%', left: `${star.left}%`, top: `${star.top}%`, width: star.size, height: star.size, opacity: 0.3, animation: `twinkle ${3 + star.delay}s infinite` }} />
@@ -224,7 +252,7 @@ export default function ConvitePage() {
             <p style={{ color: 'white', marginBottom: '32px' }}>
               {convidado.nome}, sua presença foi confirmada com sucesso!
             </p>
-            
+
             <Link href="/">
               <button style={{
                 background: 'linear-gradient(135deg, #D7B65D, #FFD700)',
@@ -249,7 +277,11 @@ export default function ConvitePage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#06142A' }}>
+    <div 
+      style={{ minHeight: '100vh', background: '#06142A' }}
+      onClick={iniciarMusica}
+      onTouchStart={iniciarMusica}
+    >
       {/* Fundo estrelado */}
       <div style={{ position: 'fixed', inset: 0, zIndex: -10 }}>
         {stars.map((star) => (
@@ -259,7 +291,7 @@ export default function ConvitePage() {
 
       {/* Botão de música */}
       <button
-        onClick={toggleMusica}
+        onClick={(e) => { e.stopPropagation(); toggleMusica(); }}
         style={{
           position: 'fixed',
           bottom: '20px',
@@ -280,6 +312,23 @@ export default function ConvitePage() {
       >
         {musicaTocando ? '🔊' : '🔇'}
       </button>
+
+      {/* Aviso para tocar música */}
+      {!musicaTocando && (
+        <div style={{
+          position: 'fixed',
+          bottom: '90px',
+          right: '20px',
+          background: 'rgba(0,0,0,0.7)',
+          color: '#D7B65D',
+          padding: '4px 8px',
+          borderRadius: '4px',
+          fontSize: '10px',
+          zIndex: 100
+        }}>
+          Toque aqui 🔈
+        </div>
+      )}
 
       <div style={{ padding: '48px 16px' }}>
         <div style={{ maxWidth: '1000px', margin: '0 auto', textAlign: 'center' }}>
@@ -354,6 +403,7 @@ export default function ConvitePage() {
               {convidado.limiteConvites === 0 ? (
                 <div style={{ background: 'rgba(74,222,128,0.1)', padding: '16px', borderRadius: '8px', marginBottom: '24px', textAlign: 'center' }}>
                   <p style={{ color: '#4ade80', fontSize: '18px' }}>✨ Este convite é apenas para você ✨</p>
+                  <p style={{ color: '#9ca3af', fontSize: '14px', marginTop: '8px' }}>Você virá sem acompanhantes</p>
                 </div>
               ) : (
                 <>
