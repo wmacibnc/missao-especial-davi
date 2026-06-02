@@ -75,7 +75,7 @@ export default function ConvidadosPage() {
 
 • Data: 11/07/2026
 • Horario: 17h
-• Local: Living Park Sul - Salao bloco E
+• Local: Living Park Sul - Salao de festas do bloco E
 
 🔗 *CONFIRME SUA PRESENCA PELO LINK:*
 ${link}

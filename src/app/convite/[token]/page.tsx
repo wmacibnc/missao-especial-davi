@@ -7,9 +7,9 @@ import Link from 'next/link'
 export default function ConvitePage() {
   const params = useParams()
   const token = params.token as string
-
+  
   const [convidado, setConvidado] = useState<any>(null)
-  const [acompanhantes, setAcompanhantes] = useState<Array<{ nome: string, documento: string }>>([])
+  const [acompanhantes, setAcompanhantes] = useState<Array<{nome: string, documento: string}>>([])
   const [loading, setLoading] = useState(true)
   const [confirmado, setConfirmado] = useState(false)
   const [qrCodeGerado, setQrCodeGerado] = useState(false)
@@ -19,6 +19,7 @@ export default function ConvitePage() {
   const [audio, setAudio] = useState<HTMLAudioElement | null>(null)
   const [showIntro, setShowIntro] = useState(true)
   const [countdownValue, setCountdownValue] = useState(3)
+  const [audioReady, setAudioReady] = useState(false)
 
   // Animação de lançamento
   useEffect(() => {
@@ -30,22 +31,26 @@ export default function ConvitePage() {
     }
   }, [countdownValue])
 
-  // Música de fundo - inicia automaticamente
+  // Música de fundo - igual à página inicial
   useEffect(() => {
     const audioElement = new Audio('/musica/also-sprach-zarathustra.mp3')
     audioElement.loop = true
     audioElement.volume = 0.3
     audioElement.preload = 'auto'
-
-    // Tenta tocar automaticamente
-    audioElement.play().catch(e => {
-      console.log('Auto-play bloqueado, usuário precisa clicar:', e)
-    })
-
+    
+    // Quando estiver pronto, tocar
+    const handleCanPlay = () => {
+      audioElement.play().catch(e => console.log('Auto-play:', e))
+      setAudioReady(true)
+    }
+    
+    audioElement.addEventListener('canplaythrough', handleCanPlay)
+    
     setAudio(audioElement)
     setMusicaTocando(true)
 
     return () => {
+      audioElement.removeEventListener('canplaythrough', handleCanPlay)
       if (audioElement) {
         audioElement.pause()
         audioElement.currentTime = 0
@@ -113,16 +118,16 @@ export default function ConvitePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSubmeter(true)
-
+    
     const acompanhantesFiltrados = acompanhantes.filter(a => a.nome && a.nome.trim() !== '')
-
+    
     try {
       const res = await fetch(`/api/convite/${token}/confirmar`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ acompanhantes: acompanhantesFiltrados })
       })
-
+      
       if (res.ok) {
         setConfirmado(true)
         setQrCodeGerado(true)
@@ -146,7 +151,7 @@ export default function ConvitePage() {
     delay: Math.random() * 3
   }))
 
-  // Tela de intro com lançamento
+  // Tela de intro
   if (showIntro) {
     return (
       <div style={{ minHeight: '100vh', background: '#06142A', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
@@ -196,7 +201,7 @@ export default function ConvitePage() {
 
   if (confirmado) {
     const qrCodeValue = `${window.location.origin}/admin/checkin?token=${convidado.token}`
-
+    
     return (
       <div style={{ minHeight: '100vh', background: '#06142A', padding: '20px' }}>
         <div style={{ position: 'fixed', inset: 0, zIndex: -10 }}>
@@ -219,7 +224,18 @@ export default function ConvitePage() {
             <p style={{ color: 'white', marginBottom: '32px' }}>
               {convidado.nome}, sua presença foi confirmada com sucesso!
             </p>
-
+            
+            {qrCodeGerado && (
+              <div style={{ marginBottom: '32px' }}>
+                <div style={{ background: 'white', padding: '20px', borderRadius: '8px', display: 'inline-block' }}>
+                  <QRCode value={qrCodeValue} size={200} />
+                </div>
+                <p style={{ color: '#9ca3af', fontSize: '12px', marginTop: '12px' }}>
+                  Guarde este QR Code para o check-in no evento!
+                </p>
+              </div>
+            )}
+            
             <Link href="/">
               <button style={{
                 background: 'linear-gradient(135deg, #D7B65D, #FFD700)',
@@ -285,7 +301,7 @@ export default function ConvitePage() {
           <h2 style={{ fontFamily: 'Orbitron, monospace', fontSize: '36px', color: 'white', marginBottom: '48px' }}>
             7º ANO DO DAVI
           </h2>
-
+          
           {/* Foto do Davi */}
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '48px' }}>
             <div style={{ width: '300px', height: '300px', borderRadius: '50%', overflow: 'hidden', border: '4px solid #D7B65D', boxShadow: '0 0 30px rgba(215,182,93,0.5)' }}>
@@ -298,6 +314,13 @@ export default function ConvitePage() {
             <p style={{ color: '#D7B65D', fontSize: '20px', marginBottom: '12px' }}>✨ Olá, {convidado.nome}! ✨</p>
             <p style={{ color: 'white', fontSize: '18px', marginBottom: '8px' }}>Você está convidado(a) para a grande aventura espacial do Davi!</p>
             <p style={{ color: '#D7B65D', fontSize: '24px', fontWeight: 'bold' }}>🚀 Confirme sua presença abaixo 🚀</p>
+          </div>
+
+          {/* Aviso de prazo */}
+          <div style={{ background: 'rgba(215,182,93,0.15)', padding: '12px', borderRadius: '8px', marginBottom: '24px', textAlign: 'center', border: '1px solid rgba(215,182,93,0.3)' }}>
+            <p style={{ color: '#facc15', fontSize: '14px', fontWeight: 'bold' }}>
+              ⚠️ *Confirme sua presença até o dia 25/05/2026*
+            </p>
           </div>
 
           {/* Countdown */}
@@ -324,18 +347,9 @@ export default function ConvitePage() {
           <div style={{ background: 'rgba(17,45,89,0.95)', padding: '28px', borderRadius: '16px', marginBottom: '32px', border: '1px solid #D7B65D' }}>
             <h3 style={{ fontFamily: 'Orbitron', fontSize: '24px', color: '#D7B65D', marginBottom: '8px' }}>📍 LOCALIZAÇÃO</h3>
             <p style={{ fontSize: '18px', color: 'white', marginBottom: '4px' }}>Living Park Sul</p>
-            <p style={{ fontSize: '16px', color: '#D7B65D', marginBottom: '16px' }}>Salão de festas do bloco E</p>
+            <p style={{ fontSize: '16px', color: '#D7B65D', marginBottom: '16px' }}>Salão de Festas - Bloco E</p>
             <p style={{ fontSize: '20px', fontWeight: 'bold', color: '#FFD700', marginBottom: '16px' }}>11 de Julho de 2026 • 17h</p>
             <a href="https://maps.app.goo.gl/Ab4gCngsNNd6ixraA" target="_blank" style={{ background: '#D7B65D', color: '#06142A', padding: '12px 24px', borderRadius: '8px', textDecoration: 'none', fontWeight: 'bold', display: 'inline-block' }}>Abrir no Google Maps →</a>
-          </div>
-
-          <div style={{ background: 'rgba(215,182,93,0.15)', padding: '12px', borderRadius: '8px', marginBottom: '24px', textAlign: 'center' }}>
-            <p style={{ color: '#facc15', fontSize: '14px', fontWeight: 'bold' }}>
-              ⚠️ *Confirme sua presença até o dia 25/05/2026*
-            </p>
-            <p style={{ color: '#9ca3af', fontSize: '12px', marginTop: '4px' }}>
-              Após essa data, sua vaga poderá ser remanejada
-            </p>
           </div>
 
           {/* Formulário de confirmação */}
@@ -347,11 +361,10 @@ export default function ConvitePage() {
           }}>
             <form onSubmit={handleSubmit}>
               <h2 style={{ color: '#D7B65D', marginBottom: '24px', fontSize: '24px' }}>Confirme sua presença</h2>
-
+              
               {convidado.limiteConvites === 0 ? (
                 <div style={{ background: 'rgba(74,222,128,0.1)', padding: '16px', borderRadius: '8px', marginBottom: '24px', textAlign: 'center' }}>
                   <p style={{ color: '#4ade80', fontSize: '18px' }}>✨ Este convite é apenas para você ✨</p>
-                  <p style={{ color: '#9ca3af', fontSize: '14px', marginTop: '8px' }}>Você virá sem acompanhantes</p>
                 </div>
               ) : (
                 <>
