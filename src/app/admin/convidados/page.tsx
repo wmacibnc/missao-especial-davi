@@ -62,7 +62,7 @@ export default function ConvidadosPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, confirmado: false })
       })
-      alert(`✅ Confirmação removida para "${nome}"`)
+      console.log(`✅ Confirmação removida para "${nome}"`)
       carregarConvidados()
     }
   }

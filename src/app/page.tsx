@@ -211,42 +211,6 @@ export default function Home() {
             <Link href="/game"><button style={{ background: 'linear-gradient(135deg, #D7B65D, #FFD700)', color: '#06142A', padding: '12px 24px', borderRadius: '8px', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}>🎮 Desafio Lunar</button></Link>
           </div>
 
-          {/* Seção de vídeos - SEMPRE VISÍVEL */}
-          <div style={{
-            marginTop: '20px',
-            padding: '24px',
-            background: 'rgba(11,31,61,0.8)',
-            borderRadius: '16px',
-            border: '1px solid #D7B65D'
-          }}>
-            <h3 style={{ fontFamily: 'Orbitron', fontSize: '24px', color: '#D7B65D', marginBottom: '20px' }}>🎬 VÍDEOS DO DAVI</h3>
-            <div style={{ display: 'grid', gap: '24px', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
-              {videos.map(video => (
-                <div key={video.id} style={{
-                  background: '#06142A',
-                  borderRadius: '12px',
-                  overflow: 'hidden',
-                  border: '1px solid rgba(215,182,93,0.3)',
-                  transition: 'transform 0.3s'
-                }}>
-                  <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0 }}>
-                    <iframe
-                      src={video.url}
-                      title={video.title}
-                      style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
-                      frameBorder="0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    />
-                  </div>
-                  <div style={{ padding: '16px' }}>
-                    <p style={{ color: '#D7B65D', fontWeight: 'bold', fontSize: '16px' }}>{video.title}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
           <div style={{ marginTop: '48px', padding: '16px', background: 'rgba(215,182,93,0.1)', borderRadius: '8px' }}>
             <p style={{ color: '#D7B65D', fontSize: '14px' }}>💫 Os convites são enviados por WhatsApp com um link exclusivo<br />Aguarde sua missão! 🚀</p>
           </div>

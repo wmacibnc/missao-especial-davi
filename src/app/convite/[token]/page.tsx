@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import QRCode from 'react-qr-code'
+import Link from 'next/link'
 
 export default function ConvitePage() {
   const params = useParams()
@@ -13,6 +14,74 @@ export default function ConvitePage() {
   const [confirmado, setConfirmado] = useState(false)
   const [qrCodeGerado, setQrCodeGerado] = useState(false)
   const [submeter, setSubmeter] = useState(false)
+  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 })
+  const [musicaTocando, setMusicaTocando] = useState(true)
+  const [audio, setAudio] = useState<HTMLAudioElement | null>(null)
+  const [showIntro, setShowIntro] = useState(true)
+  const [countdownValue, setCountdownValue] = useState(3)
+
+  // Animação de lançamento
+  useEffect(() => {
+    if (countdownValue > 0) {
+      const timer = setTimeout(() => setCountdownValue(prev => prev - 1), 1000)
+      return () => clearTimeout(timer)
+    } else if (countdownValue === 0) {
+      setTimeout(() => setShowIntro(false), 500)
+    }
+  }, [countdownValue])
+
+  // Música de fundo - inicia automaticamente
+  useEffect(() => {
+    const audioElement = new Audio('/musica/also-sprach-zarathustra.mp3')
+    audioElement.loop = true
+    audioElement.volume = 0.3
+    audioElement.preload = 'auto'
+    
+    // Tenta tocar automaticamente
+    audioElement.play().catch(e => {
+      console.log('Auto-play bloqueado, usuário precisa clicar:', e)
+    })
+    
+    setAudio(audioElement)
+    setMusicaTocando(true)
+
+    return () => {
+      if (audioElement) {
+        audioElement.pause()
+        audioElement.currentTime = 0
+      }
+    }
+  }, [])
+
+  const toggleMusica = () => {
+    if (audio) {
+      if (musicaTocando) {
+        audio.pause()
+        setMusicaTocando(false)
+      } else {
+        audio.play()
+        setMusicaTocando(true)
+      }
+    }
+  }
+
+  // Countdown do evento
+  useEffect(() => {
+    const target = new Date('2026-07-11T17:00:00-03:00')
+    const interval = setInterval(() => {
+      const now = new Date()
+      const diff = target.getTime() - now.getTime()
+      if (diff > 0) {
+        setTimeLeft({
+          days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+          hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
+          minutes: Math.floor((diff / 1000 / 60) % 60),
+          seconds: Math.floor((diff / 1000) % 60),
+        })
+      }
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [])
 
   useEffect(() => {
     carregarConvidado()
@@ -24,7 +93,6 @@ export default function ConvitePage() {
       const data = await res.json()
       setConvidado(data)
       setConfirmado(data.confirmado)
-      // Inicializar array de acompanhantes com campos vazios para o limite permitido
       if (data.limiteConvites > 0 && !data.confirmado) {
         const camposVazios = Array(data.limiteConvites).fill({ nome: '', documento: '' })
         setAcompanhantes(camposVazios)
@@ -46,7 +114,6 @@ export default function ConvitePage() {
     e.preventDefault()
     setSubmeter(true)
     
-    // Filtrar apenas acompanhantes com nome preenchido
     const acompanhantesFiltrados = acompanhantes.filter(a => a.nome && a.nome.trim() !== '')
     
     try {
@@ -71,6 +138,40 @@ export default function ConvitePage() {
     }
   }
 
+  const stars = Array.from({ length: 150 }, (_, i) => ({
+    id: i,
+    left: Math.random() * 100,
+    top: Math.random() * 100,
+    size: Math.random() * 3 + 1,
+    delay: Math.random() * 3
+  }))
+
+  // Tela de intro com lançamento
+  if (showIntro) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#06142A', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ position: 'fixed', inset: 0 }}>
+          {stars.map((star) => (
+            <div key={star.id} style={{ position: 'absolute', background: 'white', borderRadius: '50%', left: `${star.left}%`, top: `${star.top}%`, width: star.size, height: star.size, opacity: 0.3, animation: `twinkle ${3 + star.delay}s infinite` }} />
+          ))}
+        </div>
+        <div style={{ textAlign: 'center', zIndex: 1 }}>
+          <h1 style={{ fontFamily: 'Orbitron, monospace', fontSize: '48px', color: '#D7B65D' }}>MISSÃO ESPACIAL</h1>
+          <h2 style={{ fontFamily: 'Orbitron, monospace', fontSize: '64px', color: '#FFD700' }}>DAVI</h2>
+          <div style={{ fontSize: '24px', color: 'white', marginTop: '32px' }}>Lançamento em...</div>
+          <div style={{ fontSize: '80px', fontFamily: 'Orbitron', color: '#D7B65D', marginTop: '20px', animation: countdownValue > 0 ? 'pulse 1s infinite' : 'fadeOut 0.5s forwards' }}>
+            {countdownValue > 0 ? `${countdownValue}` : '🚀'}
+          </div>
+        </div>
+        <style jsx>{`
+          @keyframes pulse { 0%,100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.3); opacity: 0.7; } }
+          @keyframes fadeOut { to { opacity: 0; transform: scale(1.5); visibility: hidden; } }
+          @keyframes twinkle { 0%,100% { opacity: 0.2; } 50% { opacity: 1; } }
+        `}</style>
+      </div>
+    )
+  }
+
   if (loading) {
     return (
       <div style={{ minHeight: '100vh', background: '#06142A', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -85,6 +186,9 @@ export default function ConvitePage() {
         <div style={{ color: 'white', textAlign: 'center' }}>
           <h1 style={{ color: '#D7B65D' }}>Convite inválido</h1>
           <p>Este link não é válido ou expirou.</p>
+          <Link href="/">
+            <button style={{ marginTop: '20px', background: '#D7B65D', color: '#06142A', padding: '10px 20px', borderRadius: '8px', border: 'none', cursor: 'pointer' }}>Voltar ao Site</button>
+          </Link>
         </div>
       </div>
     )
@@ -95,6 +199,12 @@ export default function ConvitePage() {
     
     return (
       <div style={{ minHeight: '100vh', background: '#06142A', padding: '20px' }}>
+        <div style={{ position: 'fixed', inset: 0, zIndex: -10 }}>
+          {stars.map((star) => (
+            <div key={star.id} style={{ position: 'absolute', background: 'white', borderRadius: '50%', left: `${star.left}%`, top: `${star.top}%`, width: star.size, height: star.size, opacity: 0.3, animation: `twinkle ${3 + star.delay}s infinite` }} />
+          ))}
+        </div>
+
         <div style={{ maxWidth: '600px', margin: '0 auto', textAlign: 'center' }}>
           <div style={{
             background: '#0B1F3D',
@@ -110,7 +220,7 @@ export default function ConvitePage() {
               {convidado.nome}, sua presença foi confirmada com sucesso!
             </p>
             
-            <a href="/">
+            <Link href="/">
               <button style={{
                 background: 'linear-gradient(135deg, #D7B65D, #FFD700)',
                 color: '#06142A',
@@ -122,103 +232,185 @@ export default function ConvitePage() {
               }}>
                 Voltar para o site
               </button>
-            </a>
+            </Link>
           </div>
         </div>
+
+        <style jsx>{`
+          @keyframes twinkle { 0%,100% { opacity: 0.2; } 50% { opacity: 1; } }
+        `}</style>
       </div>
     )
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#06142A', padding: '20px' }}>
-      <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-        <div style={{
-          background: '#0B1F3D',
-          borderRadius: '8px',
-          padding: '32px',
-          border: '1px solid rgba(215, 182, 93, 0.3)'
-        }}>
-          <h1 style={{ fontFamily: 'Orbitron, monospace', fontSize: '32px', color: '#D7B65D', textAlign: 'center', marginBottom: '8px' }}>
-            MISSÃO ESPACIAL DAVI
-          </h1>
-          <p style={{ color: 'white', textAlign: 'center', marginBottom: '32px' }}>
-            Olá, <strong>{convidado.nome}</strong>! Você está convidado para a festa de 7 anos do Davi.
-          </p>
+    <div style={{ minHeight: '100vh', background: '#06142A' }}>
+      {/* Fundo estrelado */}
+      <div style={{ position: 'fixed', inset: 0, zIndex: -10 }}>
+        {stars.map((star) => (
+          <div key={star.id} style={{ position: 'absolute', background: 'white', borderRadius: '50%', left: `${star.left}%`, top: `${star.top}%`, width: star.size, height: star.size, opacity: 0.3, animation: `twinkle ${3 + star.delay}s infinite` }} />
+        ))}
+      </div>
 
-          <div style={{ background: '#112D59', padding: '16px', borderRadius: '8px', marginBottom: '32px' }}>
-            <p style={{ color: '#D7B65D' }}>📅 Data: 11 de Julho de 2026</p>
-            <p style={{ color: '#D7B65D' }}>⏰ Horário: 17h</p>
-            <p style={{ color: '#D7B65D' }}>📍 Local: Living Park Sul - Condomínio Living</p>
+      {/* Botão de música */}
+      <button
+        onClick={toggleMusica}
+        style={{
+          position: 'fixed',
+          bottom: '20px',
+          right: '20px',
+          width: '50px',
+          height: '50px',
+          borderRadius: '50%',
+          background: 'rgba(11,31,61,0.9)',
+          border: '1px solid #D7B65D',
+          color: '#D7B65D',
+          fontSize: '24px',
+          cursor: 'pointer',
+          zIndex: 100,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
+      >
+        {musicaTocando ? '🔊' : '🔇'}
+      </button>
+
+      <div style={{ padding: '48px 16px' }}>
+        <div style={{ maxWidth: '1000px', margin: '0 auto', textAlign: 'center' }}>
+          {/* Título */}
+          <h1 style={{ fontFamily: 'Orbitron, monospace', fontSize: '48px', color: '#D7B65D', marginBottom: '16px' }}>
+            🚀 MISSÃO ESPACIAL
+          </h1>
+          <h2 style={{ fontFamily: 'Orbitron, monospace', fontSize: '36px', color: 'white', marginBottom: '48px' }}>
+            7º ANO DO DAVI
+          </h2>
+          
+          {/* Foto do Davi */}
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '48px' }}>
+            <div style={{ width: '300px', height: '300px', borderRadius: '50%', overflow: 'hidden', border: '4px solid #D7B65D', boxShadow: '0 0 30px rgba(215,182,93,0.5)' }}>
+              <img src="/fotos/davi2.jpeg" alt="Davi" style={{ width: '100%', height: '170%', objectFit: 'cover', objectPosition: 'top 20%' }} />
+            </div>
           </div>
 
-          <form onSubmit={handleSubmit}>
-            <h2 style={{ color: '#D7B65D', marginBottom: '16px' }}>Confirme sua presença</h2>
-            
-            {convidado.limiteConvites === 0 ? (
-              <div style={{ background: 'rgba(74,222,128,0.1)', padding: '16px', borderRadius: '8px', marginBottom: '24px', textAlign: 'center' }}>
-                <p style={{ color: '#4ade80', fontSize: '18px' }}>✨ Este convite é apenas para você ✨</p>
-                <p style={{ color: '#9ca3af', fontSize: '14px', marginTop: '8px' }}>Você virá sem acompanhantes</p>
-              </div>
-            ) : (
-              <>
-                <p style={{ color: '#9ca3af', marginBottom: '16px', fontSize: '14px' }}>
-                  Você pode levar até <strong>{convidado.limiteConvites}</strong> acompanhante(s)
-                </p>
-                <p style={{ color: '#D7B65D', marginBottom: '16px', fontSize: '12px' }}>
-                  💡 Preencha apenas os nomes dos acompanhantes que irão com você. Deixe em branco os que não forem.
-                </p>
+          {/* Frases */}
+          <div style={{ margin: '32px 0', padding: '20px', background: 'rgba(215,182,93,0.1)', borderRadius: '16px' }}>
+            <p style={{ color: '#D7B65D', fontSize: '20px', marginBottom: '12px' }}>✨ Olá, {convidado.nome}! ✨</p>
+            <p style={{ color: 'white', fontSize: '18px', marginBottom: '8px' }}>Você está convidado(a) para a grande aventura espacial do Davi!</p>
+            <p style={{ color: '#D7B65D', fontSize: '24px', fontWeight: 'bold' }}>🚀 Confirme sua presença abaixo 🚀</p>
+          </div>
 
-                {acompanhantes.map((acomp, index) => (
-                  <div key={index} style={{
-                    borderTop: index > 0 ? '1px solid rgba(215, 182, 93, 0.2)' : 'none',
-                    paddingTop: index > 0 ? '16px' : '0',
-                    marginTop: index > 0 ? '16px' : '0'
-                  }}>
-                    <h3 style={{ color: '#D7B65D', fontSize: '16px', marginBottom: '12px' }}>
-                      Acompanhante {index + 1} {index === 0 && '(opcional)'}
-                    </h3>
-                    <input
-                      type="text"
-                      placeholder="Nome completo (opcional)"
-                      value={acomp.nome}
-                      onChange={(e) => atualizarAcompanhante(index, 'nome', e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '12px',
-                        marginBottom: '12px',
-                        background: '#06142A',
-                        color: 'white',
-                        border: '1px solid #D7B65D',
-                        borderRadius: '4px'
-                      }}
-                    />
-                  </div>
-                ))}
-              </>
-            )}
+          {/* Countdown */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', maxWidth: '500px', margin: '0 auto 32px' }}>
+            <div style={{ background: 'rgba(11,31,61,0.8)', padding: '16px', borderRadius: '8px' }}>
+              <div style={{ fontFamily: 'Orbitron', fontSize: '36px', color: '#D7B65D' }}>{timeLeft.days}</div>
+              <div style={{ fontSize: '11px', color: '#9ca3af' }}>DIAS</div>
+            </div>
+            <div style={{ background: 'rgba(11,31,61,0.8)', padding: '16px', borderRadius: '8px' }}>
+              <div style={{ fontFamily: 'Orbitron', fontSize: '36px', color: '#D7B65D' }}>{timeLeft.hours}</div>
+              <div style={{ fontSize: '11px', color: '#9ca3af' }}>HORAS</div>
+            </div>
+            <div style={{ background: 'rgba(11,31,61,0.8)', padding: '16px', borderRadius: '8px' }}>
+              <div style={{ fontFamily: 'Orbitron', fontSize: '36px', color: '#D7B65D' }}>{timeLeft.minutes}</div>
+              <div style={{ fontSize: '11px', color: '#9ca3af' }}>MINUTOS</div>
+            </div>
+            <div style={{ background: 'rgba(11,31,61,0.8)', padding: '16px', borderRadius: '8px' }}>
+              <div style={{ fontFamily: 'Orbitron', fontSize: '36px', color: '#D7B65D' }}>{timeLeft.seconds}</div>
+              <div style={{ fontSize: '11px', color: '#9ca3af' }}>SEGUNDOS</div>
+            </div>
+          </div>
 
-            <button
-              type="submit"
-              disabled={submeter}
-              style={{
-                width: '100%',
-                background: 'linear-gradient(135deg, #D7B65D, #FFD700)',
-                color: '#06142A',
-                padding: '16px',
-                borderRadius: '8px',
-                border: 'none',
-                fontWeight: 'bold',
-                fontSize: '16px',
-                cursor: 'pointer',
-                marginTop: '32px',
-                opacity: submeter ? 0.7 : 1
-              }}
-            >
-              {submeter ? 'Confirmando...' : '🚀 CONFIRMAR PRESENÇA'}
-            </button>
-          </form>
+          {/* Localização */}
+          <div style={{ background: 'rgba(17,45,89,0.95)', padding: '28px', borderRadius: '16px', marginBottom: '32px', border: '1px solid #D7B65D' }}>
+            <h3 style={{ fontFamily: 'Orbitron', fontSize: '24px', color: '#D7B65D', marginBottom: '8px' }}>📍 LOCALIZAÇÃO</h3>
+            <p style={{ fontSize: '18px', color: 'white', marginBottom: '4px' }}>Living Park Sul</p>
+            <p style={{ fontSize: '16px', color: '#D7B65D', marginBottom: '16px' }}>Salão de festas do bloco E</p>
+            <p style={{ fontSize: '20px', fontWeight: 'bold', color: '#FFD700', marginBottom: '16px' }}>11 de Julho de 2026 • 17h</p>
+            <a href="https://maps.app.goo.gl/Ab4gCngsNNd6ixraA" target="_blank" style={{ background: '#D7B65D', color: '#06142A', padding: '12px 24px', borderRadius: '8px', textDecoration: 'none', fontWeight: 'bold', display: 'inline-block' }}>Abrir no Google Maps →</a>
+          </div>
+
+          {/* Formulário de confirmação */}
+          <div style={{
+            background: 'rgba(11,31,61,0.95)',
+            borderRadius: '16px',
+            padding: '32px',
+            border: '1px solid rgba(215,182,93,0.3)'
+          }}>
+            <form onSubmit={handleSubmit}>
+              <h2 style={{ color: '#D7B65D', marginBottom: '24px', fontSize: '24px' }}>Confirme sua presença</h2>
+              
+              {convidado.limiteConvites === 0 ? (
+                <div style={{ background: 'rgba(74,222,128,0.1)', padding: '16px', borderRadius: '8px', marginBottom: '24px', textAlign: 'center' }}>
+                  <p style={{ color: '#4ade80', fontSize: '18px' }}>✨ Este convite é apenas para você ✨</p>
+                  <p style={{ color: '#9ca3af', fontSize: '14px', marginTop: '8px' }}>Você virá sem acompanhantes</p>
+                </div>
+              ) : (
+                <>
+                  <p style={{ color: '#9ca3af', marginBottom: '16px', fontSize: '14px' }}>
+                    Você pode levar até <strong>{convidado.limiteConvites}</strong> acompanhante(s)
+                  </p>
+                  <p style={{ color: '#D7B65D', marginBottom: '24px', fontSize: '13px' }}>
+                    💡 Preencha apenas os nomes dos acompanhantes que irão com você. Deixe em branco os que não forem.
+                  </p>
+
+                  {acompanhantes.map((acomp, index) => (
+                    <div key={index} style={{
+                      borderTop: index > 0 ? '1px solid rgba(215, 182, 93, 0.2)' : 'none',
+                      paddingTop: index > 0 ? '20px' : '0',
+                      marginTop: index > 0 ? '20px' : '0'
+                    }}>
+                      <h3 style={{ color: '#D7B65D', fontSize: '16px', marginBottom: '12px' }}>
+                        Acompanhante {index + 1} {index === 0 && '(opcional)'}
+                      </h3>
+                      <input
+                        type="text"
+                        placeholder="Nome completo (opcional)"
+                        value={acomp.nome}
+                        onChange={(e) => atualizarAcompanhante(index, 'nome', e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '14px',
+                          marginBottom: '8px',
+                          background: '#06142A',
+                          color: 'white',
+                          border: '1px solid #D7B65D',
+                          borderRadius: '8px',
+                          fontSize: '16px'
+                        }}
+                      />
+                    </div>
+                  ))}
+                </>
+              )}
+
+              <button
+                type="submit"
+                disabled={submeter}
+                style={{
+                  width: '100%',
+                  background: 'linear-gradient(135deg, #D7B65D, #FFD700)',
+                  color: '#06142A',
+                  padding: '16px',
+                  borderRadius: '12px',
+                  border: 'none',
+                  fontWeight: 'bold',
+                  fontSize: '18px',
+                  cursor: 'pointer',
+                  marginTop: '32px',
+                  opacity: submeter ? 0.7 : 1
+                }}
+              >
+                {submeter ? 'Confirmando...' : '🚀 CONFIRMAR PRESENÇA'}
+              </button>
+            </form>
+          </div>
+
         </div>
       </div>
+
+      <style jsx>{`
+        @keyframes twinkle { 0%,100% { opacity: 0.2; } 50% { opacity: 1; } }
+      `}</style>
     </div>
   )
 }
