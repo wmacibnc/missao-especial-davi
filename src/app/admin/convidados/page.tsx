@@ -69,21 +69,22 @@ export default function ConvidadosPage() {
 
   const enviarWhatsApp = (telefone: string, token: string) => {
     const link = `${window.location.origin}/convite/${token}`
-    const mensagem = `🚀 MISSAO ESPACIAL DAVI - 7 ANOS 🚀
+    const mensagem = `🚀 *MISSAO ESPACIAL DAVI - 7 ANOS* 🚀
 
-✨ VOCE ESTA CONVIDADO! ✨
+✨ *VOCE ESTA CONVIDADO!* ✨
 
 • Data: 11/07/2026
 • Horario: 17h
 • Local: Living Park Sul - Salao bloco E
 
-🔗 CONFIRMAR PRESENCA:
+🔗 *CONFIRME SUA PRESENCA PELO LINK:*
 ${link}
 
-⚠️ Confirmar ate 25/05/2026
+📱 *OU RESPONDA ESTA MENSAGEM*
 
-🎉 Sua presenca e muito importante!
-🚀 Contamos com voce!`
+⚠️ *Confirme ate 25/05/2026*
+
+🎉 Sua presenca e muito importante!`
 
     window.open(`https://wa.me/55${telefone}?text=${encodeURIComponent(mensagem)}`, '_blank')
   }

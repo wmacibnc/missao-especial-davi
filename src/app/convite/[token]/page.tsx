@@ -7,9 +7,9 @@ import Link from 'next/link'
 export default function ConvitePage() {
   const params = useParams()
   const token = params.token as string
-  
+
   const [convidado, setConvidado] = useState<any>(null)
-  const [acompanhantes, setAcompanhantes] = useState<Array<{nome: string, documento: string}>>([])
+  const [acompanhantes, setAcompanhantes] = useState<Array<{ nome: string, documento: string }>>([])
   const [loading, setLoading] = useState(true)
   const [confirmado, setConfirmado] = useState(false)
   const [qrCodeGerado, setQrCodeGerado] = useState(false)
@@ -36,12 +36,12 @@ export default function ConvitePage() {
     audioElement.loop = true
     audioElement.volume = 0.3
     audioElement.preload = 'auto'
-    
+
     // Tenta tocar automaticamente
     audioElement.play().catch(e => {
       console.log('Auto-play bloqueado, usuário precisa clicar:', e)
     })
-    
+
     setAudio(audioElement)
     setMusicaTocando(true)
 
@@ -113,16 +113,16 @@ export default function ConvitePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSubmeter(true)
-    
+
     const acompanhantesFiltrados = acompanhantes.filter(a => a.nome && a.nome.trim() !== '')
-    
+
     try {
       const res = await fetch(`/api/convite/${token}/confirmar`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ acompanhantes: acompanhantesFiltrados })
       })
-      
+
       if (res.ok) {
         setConfirmado(true)
         setQrCodeGerado(true)
@@ -196,7 +196,7 @@ export default function ConvitePage() {
 
   if (confirmado) {
     const qrCodeValue = `${window.location.origin}/admin/checkin?token=${convidado.token}`
-    
+
     return (
       <div style={{ minHeight: '100vh', background: '#06142A', padding: '20px' }}>
         <div style={{ position: 'fixed', inset: 0, zIndex: -10 }}>
@@ -219,7 +219,7 @@ export default function ConvitePage() {
             <p style={{ color: 'white', marginBottom: '32px' }}>
               {convidado.nome}, sua presença foi confirmada com sucesso!
             </p>
-            
+
             <Link href="/">
               <button style={{
                 background: 'linear-gradient(135deg, #D7B65D, #FFD700)',
@@ -285,7 +285,7 @@ export default function ConvitePage() {
           <h2 style={{ fontFamily: 'Orbitron, monospace', fontSize: '36px', color: 'white', marginBottom: '48px' }}>
             7º ANO DO DAVI
           </h2>
-          
+
           {/* Foto do Davi */}
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '48px' }}>
             <div style={{ width: '300px', height: '300px', borderRadius: '50%', overflow: 'hidden', border: '4px solid #D7B65D', boxShadow: '0 0 30px rgba(215,182,93,0.5)' }}>
@@ -329,6 +329,15 @@ export default function ConvitePage() {
             <a href="https://maps.app.goo.gl/Ab4gCngsNNd6ixraA" target="_blank" style={{ background: '#D7B65D', color: '#06142A', padding: '12px 24px', borderRadius: '8px', textDecoration: 'none', fontWeight: 'bold', display: 'inline-block' }}>Abrir no Google Maps →</a>
           </div>
 
+          <div style={{ background: 'rgba(215,182,93,0.15)', padding: '12px', borderRadius: '8px', marginBottom: '24px', textAlign: 'center' }}>
+            <p style={{ color: '#facc15', fontSize: '14px', fontWeight: 'bold' }}>
+              ⚠️ *Confirme sua presença até o dia 25/05/2026*
+            </p>
+            <p style={{ color: '#9ca3af', fontSize: '12px', marginTop: '4px' }}>
+              Após essa data, sua vaga poderá ser remanejada
+            </p>
+          </div>
+
           {/* Formulário de confirmação */}
           <div style={{
             background: 'rgba(11,31,61,0.95)',
@@ -338,7 +347,7 @@ export default function ConvitePage() {
           }}>
             <form onSubmit={handleSubmit}>
               <h2 style={{ color: '#D7B65D', marginBottom: '24px', fontSize: '24px' }}>Confirme sua presença</h2>
-              
+
               {convidado.limiteConvites === 0 ? (
                 <div style={{ background: 'rgba(74,222,128,0.1)', padding: '16px', borderRadius: '8px', marginBottom: '24px', textAlign: 'center' }}>
                   <p style={{ color: '#4ade80', fontSize: '18px' }}>✨ Este convite é apenas para você ✨</p>
