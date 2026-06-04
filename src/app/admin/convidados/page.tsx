@@ -68,7 +68,7 @@ ${link}
 
 📱 *OU RESPONDA ESTA MENSAGEM*
 
-⚠️ *Confirme ate 25/05/2026*
+⚠️ *Confirme ate 25/06/2026*
 
 🎉 Sua presenca e muito importante!`
 

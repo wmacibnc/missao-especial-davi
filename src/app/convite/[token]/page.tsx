@@ -659,7 +659,7 @@ export default function ConvitePage() {
           {/* Aviso de prazo */}
           <div style={{ background: 'rgba(215,182,93,0.15)', padding: '12px', borderRadius: '8px', marginBottom: '24px', textAlign: 'center', border: '1px solid rgba(215,182,93,0.3)' }}>
             <p style={{ color: '#facc15', fontSize: '14px', fontWeight: 'bold' }}>
-              ⚠️ Confirme sua presença até o dia 25/05/2026
+              ⚠️ Confirme sua presença até o dia 25/06/2026
             </p>
           </div>
 
