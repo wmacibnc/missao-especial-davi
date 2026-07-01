@@ -68,8 +68,6 @@ ${link}
 
 📱 *OU RESPONDA ESTA MENSAGEM*
 
-⚠️ *Confirme ate 25/06/2026*
-
 🎉 Sua presenca e muito importante!`
 
     window.open(`https://wa.me/55${telefone}?text=${encodeURIComponent(mensagem)}`, '_blank')

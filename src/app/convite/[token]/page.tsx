@@ -655,14 +655,6 @@ export default function ConvitePage() {
               ❌ Infelizmente não vou conseguir ir
             </button>
           </div>
-
-          {/* Aviso de prazo */}
-          <div style={{ background: 'rgba(215,182,93,0.15)', padding: '12px', borderRadius: '8px', marginBottom: '24px', textAlign: 'center', border: '1px solid rgba(215,182,93,0.3)' }}>
-            <p style={{ color: '#facc15', fontSize: '14px', fontWeight: 'bold' }}>
-              ⚠️ Confirme sua presença até o dia 25/06/2026
-            </p>
-          </div>
-
           {/* Countdown */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', maxWidth: '500px', margin: '0 auto 32px' }}>
             <div style={{ background: 'rgba(11,31,61,0.8)', padding: '16px', borderRadius: '8px' }}>
